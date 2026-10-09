@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { GlobalSearchCriteria, DiscoveredCompany, GlobalSearchResponse, LeadItem } from '../../types';
+import { GlobalSearchCriteria, DiscoveredCompany, GlobalSearchResponse, LeadItem, Campaign } from '../../types';
 import { searchGlobalProspects } from '../../api';
 
 interface GlobalSearchViewProps {
   onNavigateToDiscover: (companyName: string, companyWebsite?: string) => void;
+  onNavigateToCampaigns?: () => void;
   onLeadSaved: (lead: LeadItem) => void;
+  onCampaignCreated?: (campaign: Campaign) => void;
   onToast: (msg: string) => void;
 }
 
@@ -83,7 +85,7 @@ const MAX_OUTPUT_OPTIONS = [
   { value: 100, label: '100 Accounts (Maximum Capacity)' },
 ];
 
-// Clean icons
+// SVG icons
 const SearchIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = 'currentColor' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="8" />
@@ -135,25 +137,26 @@ const SendIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, colo
   </svg>
 );
 
-const MailIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = 'currentColor' }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-    <polyline points="22,6 12,13 2,6" />
-  </svg>
-);
-
 const MessageSquareIcon: React.FC<{ size?: number; color?: string }> = ({ size = 13, color = 'currentColor' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
   </svg>
 );
 
+const FolderIcon: React.FC<{ size?: number; color?: string }> = ({ size = 13, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+  </svg>
+);
+
 export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
   onNavigateToDiscover,
+  onNavigateToCampaigns,
   onLeadSaved,
+  onCampaignCreated,
   onToast,
 }) => {
-  // Search parameters
+  // Search criteria form states
   const [sector, setSector] = useState<string>('b2b_saas');
   const [companySize, setCompanySize] = useState<string>('50-250');
   const [approxRevenue, setApproxRevenue] = useState<string>('$10M-$50M');
@@ -170,8 +173,11 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
   const [savedLeadIds, setSavedLeadIds] = useState<Set<string>>(new Set());
 
   // Campaign State
+  const [campaignName, setCampaignName] = useState<string>('');
+  const [campaignNameError, setCampaignNameError] = useState<string | null>(null);
   const [campaignDrafts, setCampaignDrafts] = useState<Record<string, CampaignEmailDraft>>({});
   const [isReviewModalOpen, setIsReviewModalOpen] = useState<boolean>(false);
+  const [reviewMode, setReviewMode] = useState<'split' | 'feed'>('split');
   const [selectedReviewCompId, setSelectedReviewCompId] = useState<string | null>(null);
   const [reviewSearchQuery, setReviewSearchQuery] = useState<string>('');
   const [campaignPhase, setCampaignPhase] = useState<'idle' | 'sending' | 'active'>('idle');
@@ -255,6 +261,9 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
 
       setCampaignDrafts(draftsMap);
       setSelectedReviewCompId(response.results[0]?.id || null);
+      // Pre-fill a smart default campaign name
+      const defaultCampaignTitle = `${criteria.sector.replace('_', ' ').toUpperCase()} Outbound (${criteria.region.split(' ')[0]})`;
+      setCampaignName(defaultCampaignTitle);
       onToast(`Discovered ${response.total_found} accounts in ${(response.duration_ms / 1000).toFixed(1)}s`);
     } catch (err: any) {
       setError(err.message || 'Live web search failed. Please try again.');
@@ -341,6 +350,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
   // Launch Campaign Flow
   const handleOpenReviewModal = () => {
     if (!searchResult || searchResult.results.length === 0) return;
+    setCampaignNameError(null);
     setIsReviewModalOpen(true);
   };
 
@@ -355,6 +365,12 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
   };
 
   const handleConfirmAndLaunchCampaign = async () => {
+    if (!campaignName.trim()) {
+      setCampaignNameError('Campaign name is required to start and track the campaign.');
+      return;
+    }
+
+    setCampaignNameError(null);
     setIsReviewModalOpen(false);
     setCampaignPhase('sending');
     setDispatchProgress(0);
@@ -366,12 +382,26 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
       const c = companies[i];
       setDispatchCompany(c.company_name);
       setDispatchProgress(Math.round(((i + 1) / total) * 100));
-      // Fast smooth animated dispatch feedback
       await new Promise((r) => setTimeout(r, Math.max(25, Math.min(100, 1400 / total))));
     }
 
+    // Add campaign to global campaigns list in Campaigns tab
+    const finalCampaignName = campaignName.trim();
+    if (onCampaignCreated && searchResult) {
+      const newCamp: Campaign = {
+        id: `camp-${Date.now()}`,
+        name: finalCampaignName,
+        tagline: `${sector.replace('_', ' ').toUpperCase()} · ${region} · Discovered via Global Search`,
+        icp: `Targeting ${targetRole} in ${companySize} employee companies (${approxRevenue} ARR).`,
+        signal_filter: buyingSignal,
+        status: 'Active draft',
+        leads_count: searchResult.total_found,
+      };
+      onCampaignCreated(newCamp);
+    }
+
     setCampaignPhase('active');
-    onToast(`Campaign launched: ${total} outreach emails sent. Waiting for responses.`);
+    onToast(`Campaign "${finalCampaignName}" launched! Sent ${total} emails and added to Campaigns tab.`);
   };
 
   const handleSimulateReply = (companyId: string) => {
@@ -446,7 +476,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
         </h1>
         <p style={{ fontSize: '13px', color: '#56665c', margin: 0, maxWidth: '820px', lineHeight: 1.5 }}>
           Search the live internet for verified enterprise accounts matching your precise ICP parameters.
-          Set search volume up to 100 output accounts and launch complete automated outbound cadences.
+          Select output options up to 100 accounts, name your campaign, review emails, and launch automated cadences.
         </p>
       </div>
 
@@ -647,7 +677,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
             {/* 7. Search Output Limit (Up to 100) */}
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#27382d', marginBottom: '6px' }}>
-                Search Output Limit (Max 100) <span style={{ color: '#dc2626' }}>*</span>
+                Search Output Options (Max 100) <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <select
                 className="input-select"
@@ -791,7 +821,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
             <SendIcon size={22} color="#b9f36b" />
           </div>
           <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#17221d', margin: '0 0 6px 0' }}>
-            Dispatching Campaign Outreach Emails...
+            Dispatching Campaign "{campaignName}"...
           </h3>
           <p style={{ fontSize: '13px', color: '#56665c', margin: '0 0 18px 0' }}>
             Delivering personalized message to <strong>{dispatchCompany}</strong> ({dispatchProgress}%)
@@ -844,18 +874,42 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                   🟢 Campaign Active • Emails Dispatched
                 </span>
                 <span style={{ fontSize: '12px', color: '#d2e3d5' }}>
-                  Demo Mode • Cadence Monitoring
+                  Added to Campaigns Tab
                 </span>
               </div>
               <h2 style={{ fontSize: '20px', fontWeight: 800, margin: '0 0 4px 0', letterSpacing: '-0.02em', color: '#ffffff' }}>
-                Outbound Sequence Active for {totalSent} Accounts
+                Campaign "{campaignName}" Active ({totalSent} Accounts)
               </h2>
               <div style={{ fontSize: '12px', color: '#b9cfbe' }}>
-                Initial outreach emails sent. Automatically awaiting prospect responses & follow-up triggers.
+                Initial outreach emails sent. Waiting for prospect replies and scheduled follow-ups.
               </div>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {onNavigateToCampaigns && (
+                <button
+                  type="button"
+                  onClick={onNavigateToCampaigns}
+                  className="btn"
+                  style={{
+                    background: '#b9f36b',
+                    color: '#17221d',
+                    border: 'none',
+                    fontSize: '12px',
+                    fontWeight: 800,
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <FolderIcon size={13} color="#17221d" />
+                  View in Campaigns Tab →
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => setCampaignPhase('idle')}
@@ -881,7 +935,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
             <div className="panel" style={{ padding: '16px 20px', borderRadius: '10px', background: '#ffffff', border: '1px solid #dbe3dc' }}>
               <div style={{ fontSize: '11px', fontWeight: 700, color: '#68776e', textTransform: 'uppercase' }}>Emails Dispatched</div>
               <div style={{ fontSize: '26px', fontWeight: 800, color: '#17221d', marginTop: '4px' }}>{totalSent}</div>
-              <div style={{ fontSize: '11px', color: '#243c22', fontWeight: 600, marginTop: '2px' }}>100% Delivered</div>
+              <div style={{ fontSize: '11px', color: '#243c22', fontWeight: 600, marginTop: '2px' }}>100% Delivered (Demo)</div>
             </div>
 
             <div className="panel" style={{ padding: '16px 20px', borderRadius: '10px', background: '#ffffff', border: '1px solid #dbe3dc' }}>
@@ -897,7 +951,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
             </div>
 
             <div className="panel" style={{ padding: '16px 20px', borderRadius: '10px', background: '#ffffff', border: '1px solid #dbe3dc' }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: '#68776e', textTransform: 'uppercase' }}>Next Touchpoint</div>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#68776e', textTransform: 'uppercase' }}>Next Cadence Touchpoint</div>
               <div style={{ fontSize: '16px', fontWeight: 800, color: '#17221d', marginTop: '10px' }}>In 3 business days</div>
               <div style={{ fontSize: '11px', color: '#68776e', fontWeight: 600, marginTop: '2px' }}>Follow-up #1 scheduled</div>
             </div>
@@ -910,7 +964,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                 Active Prospect Cadence Queue ({allDraftsList.length} Accounts)
               </h3>
               <div style={{ fontSize: '12px', color: '#68776e' }}>
-                Click "Simulate Reply" to test prospect engagement demo
+                Click "Simulate Reply" to demo incoming prospect interaction
               </div>
             </div>
 
@@ -1066,7 +1120,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                             borderRadius: '6px',
                             cursor: 'pointer',
                           }}
-                          title="Manually trigger Follow-up #1 now (Demo)"
+                          title="Trigger Follow-up #1 now (Demo)"
                         >
                           Send Follow-up (Demo)
                         </button>
@@ -1436,235 +1490,448 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
         </div>
       )}
 
-      {/* CONFIRMATION & EMAIL EDIT REVIEW MODAL */}
+      {/* CONFIRMATION & EMAIL EDIT REVIEW MODAL (WITH DEDICATED SCROLLING & COMPULSORY CAMPAIGN NAME) */}
       {isReviewModalOpen && searchResult && (
         <div
           style={{
             position: 'fixed',
             inset: 0,
             zIndex: 1000,
-            background: 'rgba(23, 34, 29, 0.65)',
-            backdropFilter: 'blur(4px)',
+            background: 'rgba(23, 34, 29, 0.7)',
+            backdropFilter: 'blur(5px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '20px',
+            padding: '24px',
           }}
         >
           <div
             className="panel"
             style={{
               width: '100%',
-              maxWidth: '960px',
-              maxHeight: '90vh',
+              maxWidth: '1100px',
+              height: '90vh',
+              maxHeight: '840px',
               background: '#ffffff',
               borderRadius: '16px',
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: '0 20px 50px rgba(23, 34, 29, 0.25)',
+              boxShadow: '0 25px 60px rgba(23, 34, 29, 0.3)',
               overflow: 'hidden',
+              border: '1px solid #c9d6cc',
             }}
           >
-            {/* Modal Header */}
+            {/* Modal Top Header with Compulsory Campaign Name Input */}
             <div
               style={{
-                padding: '20px 24px',
+                padding: '18px 24px',
                 borderBottom: '1px solid #dbe3dc',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
                 background: '#f9fbf9',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
               }}
             >
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#17221d', margin: 0 }}>
-                    Review & Confirm Outbound Campaign
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#17221d', margin: 0, letterSpacing: '-0.02em' }}>
+                    Confirm & Review Campaign Emails
                   </h2>
                   <span className="pill pill-high" style={{ fontSize: '11px', padding: '2px 8px' }}>
                     {searchResult.total_found} Accounts Targeted
                   </span>
                 </div>
-                <p style={{ fontSize: '12px', color: '#56665c', margin: '4px 0 0 0' }}>
-                  Review and customize outreach emails for all discovered accounts before starting the cadence.
-                </p>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {/* View Mode Toggle: Split vs Continuous Feed */}
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      background: '#e8efe9',
+                      borderRadius: '7px',
+                      padding: '2px',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setReviewMode('split')}
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        border: 'none',
+                        borderRadius: '5px',
+                        cursor: 'pointer',
+                        background: reviewMode === 'split' ? '#ffffff' : 'transparent',
+                        color: reviewMode === 'split' ? '#17221d' : '#68776e',
+                        boxShadow: reviewMode === 'split' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                      }}
+                    >
+                      Split Editor
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setReviewMode('feed')}
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        border: 'none',
+                        borderRadius: '5px',
+                        cursor: 'pointer',
+                        background: reviewMode === 'feed' ? '#ffffff' : 'transparent',
+                        color: reviewMode === 'feed' ? '#17221d' : '#68776e',
+                        boxShadow: reviewMode === 'feed' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                      }}
+                    >
+                      Scroll All Emails ({allDraftsList.length})
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsReviewModalOpen(false)}
+                    style={{
+                      fontSize: '18px',
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#68776e',
+                      cursor: 'pointer',
+                      padding: '4px 8px',
+                    }}
+                    title="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsReviewModalOpen(false)}
-                className="btn"
-                style={{
-                  fontSize: '18px',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#68776e',
-                  cursor: 'pointer',
-                  padding: '4px 8px',
-                }}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Modal Two-Pane Content */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '320px 1fr',
-                flex: 1,
-                minHeight: '440px',
-                overflow: 'hidden',
-              }}
-            >
-              {/* Left Pane: Account List & Search */}
+              {/* Compulsory Campaign Name Bar */}
               <div
                 style={{
-                  borderRight: '1px solid #dbe3dc',
                   display: 'flex',
-                  flexDirection: 'column',
-                  background: '#fafcfa',
+                  alignItems: 'center',
+                  gap: '12px',
+                  background: '#ffffff',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  border: campaignNameError ? '1.5px solid #dc2626' : '1px solid #cfe0d2',
+                  boxShadow: '0 2px 6px rgba(23, 34, 29, 0.03)',
                 }}
               >
-                <div style={{ padding: '12px', borderBottom: '1px solid #edf1ee' }}>
+                <div style={{ flexShrink: 0 }}>
+                  <label
+                    htmlFor="campaign-name-input"
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      color: '#17221d',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    Campaign Name <span style={{ color: '#dc2626' }}>*</span>
+                    <span style={{ fontSize: '10px', color: '#68776e', fontWeight: 500 }}>(Compulsory to start)</span>
+                  </label>
+                </div>
+
+                <div style={{ flex: 1 }}>
                   <input
+                    id="campaign-name-input"
                     type="text"
-                    placeholder="Search accounts..."
-                    value={reviewSearchQuery}
-                    onChange={(e) => setReviewSearchQuery(e.target.value)}
+                    required
+                    value={campaignName}
+                    onChange={(e) => {
+                      setCampaignName(e.target.value);
+                      if (campaignNameError) setCampaignNameError(null);
+                    }}
+                    placeholder="Enter campaign name (e.g. Q4 FinTech Expansion Cadence)..."
                     style={{
                       width: '100%',
-                      padding: '8px 10px',
+                      padding: '7px 12px',
                       borderRadius: '6px',
                       border: '1px solid #d3ded6',
-                      fontSize: '12px',
-                      background: '#ffffff',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      color: '#17221d',
+                      outline: 'none',
+                      background: '#fafcfa',
                     }}
                   />
                 </div>
-
-                <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
-                  {filteredReviewList.map((draft) => {
-                    const isSelected = activeSelectedDraft?.companyId === draft.companyId;
-
-                    return (
-                      <div
-                        key={draft.companyId}
-                        onClick={() => setSelectedReviewCompId(draft.companyId)}
-                        style={{
-                          padding: '10px 12px',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          background: isSelected ? '#eef6f0' : 'transparent',
-                          border: isSelected ? '1px solid #243c22' : '1px solid transparent',
-                          marginBottom: '4px',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: '13px', fontWeight: 700, color: '#17221d' }}>
-                            {draft.companyName}
-                          </span>
-                          <span className="pill pill-high" style={{ fontSize: '9px', padding: '1px 5px' }}>
-                            Fit {draft.fitScore}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#68776e', marginTop: '2px' }}>
-                          {draft.domain} • {draft.targetRole.split('/')[0]}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
 
-              {/* Right Pane: Email Editor */}
-              {activeSelectedDraft && (
-                <div
-                  style={{
-                    padding: '24px',
-                    overflowY: 'auto',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '16px',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      paddingBottom: '12px',
-                      borderBottom: '1px solid #edf1ee',
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontSize: '16px', fontWeight: 800, color: '#17221d' }}>
-                        Outreach Email for {activeSelectedDraft.companyName}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#68776e' }}>
-                        To: Buyer Persona ({activeSelectedDraft.targetRole})
-                      </div>
-                    </div>
-
-                    <a
-                      href={activeSelectedDraft.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ fontSize: '11px', color: '#215c32', textDecoration: 'none', fontWeight: 600 }}
-                    >
-                      Visit {activeSelectedDraft.domain} ↗
-                    </a>
-                  </div>
-
-                  {/* Subject Line */}
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#27382d', marginBottom: '6px' }}>
-                      Subject Line
-                    </label>
-                    <input
-                      type="text"
-                      value={activeSelectedDraft.subject}
-                      onChange={(e) => handleUpdateDraft(activeSelectedDraft.companyId, 'subject', e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid #d3ded6',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        color: '#17221d',
-                      }}
-                    />
-                  </div>
-
-                  {/* Body Editor */}
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#27382d', marginBottom: '6px' }}>
-                      Email Body (Editable)
-                    </label>
-                    <textarea
-                      rows={10}
-                      value={activeSelectedDraft.body}
-                      onChange={(e) => handleUpdateDraft(activeSelectedDraft.companyId, 'body', e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        borderRadius: '8px',
-                        border: '1px solid #d3ded6',
-                        fontSize: '13px',
-                        lineHeight: 1.6,
-                        color: '#17221d',
-                        fontFamily: 'inherit',
-                        resize: 'vertical',
-                      }}
-                    />
-                  </div>
+              {campaignNameError && (
+                <div style={{ fontSize: '11px', color: '#b91c1c', fontWeight: 700, margin: '-4px 0 0 4px' }}>
+                  ⚠️ {campaignNameError}
                 </div>
               )}
             </div>
 
-            {/* Modal Footer */}
+            {/* Modal Body: Scrollable Content */}
+            <div style={{ flex: 1, overflow: 'hidden', display: 'flex', position: 'relative' }}>
+              {reviewMode === 'split' ? (
+                /* SPLIT VIEW: Left list + Right editor */
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '320px 1fr',
+                    width: '100%',
+                    height: '100%',
+                  }}
+                >
+                  {/* Left Pane: Scrollable Accounts List */}
+                  <div
+                    style={{
+                      borderRight: '1px solid #dbe3dc',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      background: '#fafcfa',
+                      height: '100%',
+                    }}
+                  >
+                    <div style={{ padding: '12px', borderBottom: '1px solid #edf1ee' }}>
+                      <input
+                        type="text"
+                        placeholder="Search accounts in queue..."
+                        value={reviewSearchQuery}
+                        onChange={(e) => setReviewSearchQuery(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 10px',
+                          borderRadius: '6px',
+                          border: '1px solid #d3ded6',
+                          fontSize: '12px',
+                          background: '#ffffff',
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
+                      {filteredReviewList.map((draft) => {
+                        const isSelected = activeSelectedDraft?.companyId === draft.companyId;
+
+                        return (
+                          <div
+                            key={draft.companyId}
+                            onClick={() => setSelectedReviewCompId(draft.companyId)}
+                            style={{
+                              padding: '10px 12px',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              background: isSelected ? '#e2eee4' : '#ffffff',
+                              border: isSelected ? '1.5px solid #243c22' : '1px solid #edf1ee',
+                              marginBottom: '6px',
+                              transition: 'all 0.15s ease',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span style={{ fontSize: '13px', fontWeight: 800, color: '#17221d' }}>
+                                {draft.companyName}
+                              </span>
+                              <span className="pill pill-high" style={{ fontSize: '9px', padding: '1px 5px' }}>
+                                Fit {draft.fitScore}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#68776e', marginTop: '2px' }}>
+                              {draft.domain} • {draft.targetRole.split('/')[0]}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Right Pane: Scrollable Email Editor */}
+                  {activeSelectedDraft && (
+                    <div
+                      style={{
+                        padding: '24px',
+                        overflowY: 'auto',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '16px',
+                        height: '100%',
+                        background: '#ffffff',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          paddingBottom: '12px',
+                          borderBottom: '1px solid #edf1ee',
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontSize: '16px', fontWeight: 800, color: '#17221d' }}>
+                            Outreach Email Draft for {activeSelectedDraft.companyName}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#68776e' }}>
+                            Target Buyer Persona: <strong>{activeSelectedDraft.targetRole}</strong>
+                          </div>
+                        </div>
+
+                        <a
+                          href={activeSelectedDraft.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ fontSize: '12px', color: '#215c32', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <span>{activeSelectedDraft.domain}</span>
+                          <ExternalLinkIcon size={11} color="#215c32" />
+                        </a>
+                      </div>
+
+                      {/* Subject Line Input */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#27382d', marginBottom: '6px' }}>
+                          Email Subject Line
+                        </label>
+                        <input
+                          type="text"
+                          value={activeSelectedDraft.subject}
+                          onChange={(e) => handleUpdateDraft(activeSelectedDraft.companyId, 'subject', e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            border: '1px solid #d3ded6',
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            color: '#17221d',
+                            background: '#fafcfa',
+                          }}
+                        />
+                      </div>
+
+                      {/* Body Textarea */}
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#27382d', marginBottom: '6px' }}>
+                          Personalized Outreach Body (Editable)
+                        </label>
+                        <textarea
+                          rows={12}
+                          value={activeSelectedDraft.body}
+                          onChange={(e) => handleUpdateDraft(activeSelectedDraft.companyId, 'body', e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '14px',
+                            borderRadius: '8px',
+                            border: '1px solid #d3ded6',
+                            fontSize: '13px',
+                            lineHeight: 1.6,
+                            color: '#17221d',
+                            fontFamily: 'inherit',
+                            resize: 'vertical',
+                            background: '#fafcfa',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* FEED VIEW: Full scroll through ALL emails consecutively */
+                <div
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    overflowY: 'auto',
+                    padding: '24px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '24px',
+                    background: '#f8faf8',
+                  }}
+                >
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#56665c', marginBottom: '-8px' }}>
+                    Showing all {allDraftsList.length} generated outreach emails. You can scroll through and edit any email in place:
+                  </div>
+
+                  {allDraftsList.map((draft, idx) => (
+                    <div
+                      key={draft.companyId}
+                      className="panel"
+                      style={{
+                        padding: '20px',
+                        background: '#ffffff',
+                        borderRadius: '12px',
+                        border: '1px solid #dbe3dc',
+                        boxShadow: '0 2px 10px rgba(23, 34, 29, 0.04)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', borderBottom: '1px solid #edf1ee', paddingBottom: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#243c22', color: '#b9f36b', fontWeight: 800, fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {idx + 1}
+                          </span>
+                          <div>
+                            <span style={{ fontSize: '15px', fontWeight: 800, color: '#17221d' }}>{draft.companyName}</span>
+                            <span style={{ fontSize: '12px', color: '#68776e', marginLeft: '6px' }}>({draft.domain})</span>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span className="pill pill-high" style={{ fontSize: '10px', padding: '2px 8px' }}>
+                            ICP Fit {draft.fitScore}
+                          </span>
+                          <span style={{ fontSize: '11px', color: '#495950' }}>
+                            Target: <strong>{draft.targetRole}</strong>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: '10px' }}>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#27382d', marginBottom: '4px' }}>
+                          Subject
+                        </label>
+                        <input
+                          type="text"
+                          value={draft.subject}
+                          onChange={(e) => handleUpdateDraft(draft.companyId, 'subject', e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '8px 10px',
+                            borderRadius: '6px',
+                            border: '1px solid #d3ded6',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            color: '#17221d',
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#27382d', marginBottom: '4px' }}>
+                          Message Body
+                        </label>
+                        <textarea
+                          rows={6}
+                          value={draft.body}
+                          onChange={(e) => handleUpdateDraft(draft.companyId, 'body', e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '10px',
+                            borderRadius: '6px',
+                            border: '1px solid #d3ded6',
+                            fontSize: '12px',
+                            lineHeight: 1.5,
+                            color: '#17221d',
+                            fontFamily: 'inherit',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer with Compulsory Launch Button */}
             <div
               style={{
                 padding: '16px 24px',
@@ -1676,7 +1943,11 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
               }}
             >
               <div style={{ fontSize: '12px', color: '#68776e' }}>
-                All {searchResult.total_found} emails will be queued for demo delivery
+                {campaignName.trim() ? (
+                  <span>Ready to dispatch to {searchResult.total_found} accounts as <strong>"{campaignName.trim()}"</strong></span>
+                ) : (
+                  <span style={{ color: '#dc2626', fontWeight: 600 }}>Please specify a Campaign Name above to enable launch</span>
+                )}
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1698,25 +1969,30 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                   Cancel
                 </button>
 
+                {/* COMPULSORY LAUNCH BUTTON */}
                 <button
                   type="button"
                   onClick={handleConfirmAndLaunchCampaign}
+                  disabled={!campaignName.trim()}
                   className="btn btn-dark"
                   style={{
-                    padding: '9px 20px',
+                    padding: '10px 22px',
                     fontSize: '13px',
                     fontWeight: 800,
                     borderRadius: '8px',
-                    background: '#243c22',
+                    background: !campaignName.trim() ? '#94a398' : '#243c22',
                     color: '#b9f36b',
-                    cursor: 'pointer',
+                    cursor: !campaignName.trim() ? 'not-allowed' : 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '7px',
+                    boxShadow: !campaignName.trim() ? 'none' : '0 2px 10px rgba(36, 60, 34, 0.25)',
+                    transition: 'all 0.2s ease',
                   }}
+                  title={!campaignName.trim() ? 'Enter a campaign name to enable launch' : 'Launch campaign and queue emails'}
                 >
                   <SendIcon size={14} color="#b9f36b" />
-                  <span>Confirm & Launch Demo Campaign ({searchResult.total_found} Emails)</span>
+                  <span>Launch Campaign ({searchResult.total_found} Emails)</span>
                 </button>
               </div>
             </div>

@@ -1,25 +1,19 @@
 import React, { useState } from 'react';
-import { LeadItem } from '../../types';
+import { LeadItem, Campaign } from '../../types';
 
 interface CampaignsViewProps {
   leads: LeadItem[];
+  campaigns?: Campaign[];
+  onCampaignCreated?: (campaign: Campaign) => void;
   onToast: (message: string) => void;
   onNavigateToDiscover: (name: string) => void;
   onApproveLead?: (id: number) => void;
 }
 
-interface Campaign {
-  id: string;
-  name: string;
-  tagline: string;
-  icp: string;
-  signal_filter: string;
-  status: 'Active draft' | 'In review' | 'Paused';
-  leads_count: number;
-}
-
 export const CampaignsView: React.FC<CampaignsViewProps> = ({
   leads,
+  campaigns: externalCampaigns,
+  onCampaignCreated,
   onToast,
   onNavigateToDiscover,
   onApproveLead
@@ -30,7 +24,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
   const [newCampaignName, setNewCampaignName] = useState('');
   const [newCampaignIcp, setNewCampaignIcp] = useState('');
 
-  const [campaigns, setCampaigns] = useState<Campaign[]>([
+  const [internalCampaigns, setInternalCampaigns] = useState<Campaign[]>([
     {
       id: 'camp-1',
       name: 'Q4 RevOps Leaders',
@@ -59,6 +53,8 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
       leads_count: 8
     }
   ]);
+
+  const campaigns = externalCampaigns ?? internalCampaigns;
 
   const approvedLeads = leads.filter((l) => l.is_approved);
   const pendingLeads = leads.filter((l) => !l.is_approved);
@@ -120,7 +116,11 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
       leads_count: approvedLeads.length
     };
 
-    setCampaigns([newCamp, ...campaigns]);
+    if (onCampaignCreated) {
+      onCampaignCreated(newCamp);
+    } else {
+      setInternalCampaigns([newCamp, ...internalCampaigns]);
+    }
     setShowNewCampaignModal(false);
     setNewCampaignName('');
     setNewCampaignIcp('');

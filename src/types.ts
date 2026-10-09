@@ -195,3 +195,13 @@ export interface GlobalSearchResponse {
   timestamp: string;
 }
 
+export interface Campaign {
+  id: string;
+  name: string;
+  tagline: string;
+  icp: string;
+  signal_filter: string;
+  status: 'Active draft' | 'In review' | 'Paused';
+  leads_count: number;
+}
+

@@ -19,8 +19,38 @@ import { InboxView } from './components/views/InboxView';
 import { AnalyticsView } from './components/views/AnalyticsView';
 import { SettingsView } from './components/views/SettingsView';
 import { Toast } from './components/Toast';
-import { LeadItem, HealthResponse } from './types';
+import { LeadItem, HealthResponse, Campaign } from './types';
 import { checkHealth, fetchLeads, approveLead } from './api';
+
+const INITIAL_CAMPAIGNS: Campaign[] = [
+  {
+    id: 'camp-1',
+    name: 'Q4 RevOps Leaders',
+    tagline: 'Mid-market SaaS · Evidence-led outbound',
+    icp: 'B2B Software & SaaS scaling sales and engineering teams.',
+    signal_filter: 'Hiring / team growth',
+    status: 'Active draft',
+    leads_count: 24
+  },
+  {
+    id: 'camp-2',
+    name: 'Healthcare Growth Signals',
+    tagline: 'Healthcare technology · Hiring signals',
+    icp: 'Healthcare and life sciences tech providers with new facility or staff expansion.',
+    signal_filter: 'Hiring / team growth',
+    status: 'In review',
+    leads_count: 12
+  },
+  {
+    id: 'camp-3',
+    name: 'Enterprise E-Commerce & Retail Tech',
+    tagline: 'Global merchant platforms · Capital & Funding events',
+    icp: 'Fast-scaling e-commerce infrastructure, payment systems, and merchants.',
+    signal_filter: 'Funding event',
+    status: 'Active draft',
+    leads_count: 8
+  }
+];
 
 const INITIAL_LEADS: LeadItem[] = [
   {
@@ -99,6 +129,7 @@ export const App: React.FC = () => {
   const [discoverInitialCompany, setDiscoverInitialCompany] = useState<string>('');
   const [discoverInitialWebsite, setDiscoverInitialWebsite] = useState<string>('');
   const [leads, setLeads] = useState<LeadItem[]>(INITIAL_LEADS);
+  const [campaigns, setCampaigns] = useState<Campaign[]>(INITIAL_CAMPAIGNS);
   const [health, setHealth] = useState<HealthResponse | null>(null);
 
   const showToast = (message: string) => {
@@ -150,6 +181,15 @@ export const App: React.FC = () => {
     }
     setCurrentPage('discover');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleNavigateToCampaigns = () => {
+    setCurrentPage('campaigns');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCampaignCreated = (newCampaign: Campaign) => {
+    setCampaigns((prev) => [newCampaign, ...prev]);
   };
 
   const handleLeadSaved = (newLead: LeadItem) => {
@@ -232,7 +272,9 @@ export const App: React.FC = () => {
               {currentPage === 'global_search' && (
                 <GlobalSearchView
                   onNavigateToDiscover={handleNavigateToDiscover}
+                  onNavigateToCampaigns={handleNavigateToCampaigns}
                   onLeadSaved={handleLeadSaved}
+                  onCampaignCreated={handleCampaignCreated}
                   onToast={showToast}
                 />
               )}
@@ -253,6 +295,8 @@ export const App: React.FC = () => {
               {currentPage === 'campaigns' && (
                 <CampaignsView
                   leads={leads}
+                  campaigns={campaigns}
+                  onCampaignCreated={handleCampaignCreated}
                   onToast={showToast}
                   onNavigateToDiscover={handleNavigateToDiscover}
                   onApproveLead={handleApproveLead}
