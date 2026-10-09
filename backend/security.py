@@ -1,3 +1,4 @@
+import re
 import ipaddress
 import socket
 import urllib.parse
@@ -160,21 +161,48 @@ class SafeHTTPClient:
 
 def sanitize_html_content(raw_html: str, max_chars: int = 25000) -> str:
     """
-    Extracts text from HTML while removing script, style, and malicious tags.
-    Truncates to max_chars to keep LLM context bounded.
+    Extracts text from HTML while removing script, style, navigation,
+    header, footer, menu, and boilerplate navigation chrome.
+    Truncates to max_chars to keep context bounded.
     """
     if not raw_html:
         return ""
 
     try:
         soup = BeautifulSoup(raw_html, "html.parser")
-        for tag in soup(["script", "style", "noscript", "iframe", "object", "embed", "svg"]):
+        # Decompose non-content and navigation tags
+        for tag in soup([
+            "script", "style", "noscript", "iframe", "object", "embed", "svg",
+            "nav", "header", "footer", "aside", "form", "button", "menu"
+        ]):
             tag.decompose()
 
+        # Decompose elements with common boilerplate classes or IDs
+        for el in soup.find_all(attrs={"class": re.compile(r"nav|menu|skip|cookie|header|footer|banner|modal|drawer", re.I)}):
+            el.decompose()
+
+        for el in soup.find_all(attrs={"id": re.compile(r"nav|menu|skip|cookie|header|footer|banner|modal|drawer", re.I)}):
+            el.decompose()
+
         text = soup.get_text(separator="\n")
-        lines = (line.strip() for line in text.splitlines())
-        chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-        clean_text = "\n".join(chunk for chunk in chunks if chunk)
+        lines = []
+        for line in text.splitlines():
+            s = line.strip()
+            if not s:
+                continue
+            s_lower = s.lower()
+            # Filter out stray single navigation words or navigation markers
+            if any(s_lower == junk for junk in [
+                "skip to content", "skip to main content", "menu", "back to main menu",
+                "back", "close", "sign in", "log in", "cookie policy", "privacy policy",
+                "terms of service", "all rights reserved", "accept all", "reject all"
+            ]):
+                continue
+            if s.startswith("«") or s.startswith("»") or s.startswith("‹") or s.startswith("›"):
+                continue
+            lines.append(s)
+
+        clean_text = "\n".join(lines)
         return clean_text[:max_chars]
     except Exception:
         return raw_html[:max_chars]

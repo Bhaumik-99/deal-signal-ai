@@ -13,109 +13,6 @@ interface DiscoverViewProps {
   onToast: (message: string) => void;
 }
 
-interface WorkflowStepMeta {
-  id: string;
-  number: number;
-  label: string;
-  tool: string;
-  hint: string;
-  desc: string;
-  icon: string;
-}
-
-const AGENT_WORKFLOW_STEPS: WorkflowStepMeta[] = [
-  {
-    id: 'PLANNING',
-    number: 1,
-    label: 'Planning',
-    tool: 'AgentPlanner',
-    hint: 'Gap Formulation',
-    desc: 'Analyzing company identity & formulating initial evidence gaps',
-    icon: '🧭'
-  },
-  {
-    id: 'TOOL_SELECT',
-    number: 2,
-    label: 'Tool Selection',
-    tool: 'DynamicToolSelector',
-    hint: 'Dynamic Routing',
-    desc: 'Evaluating missing requirements and selecting research tools',
-    icon: '⚙️'
-  },
-  {
-    id: 'RETRIEVAL',
-    number: 3,
-    label: 'Web Ingestion',
-    tool: 'fetch_company_page',
-    hint: 'SSRF & DNS Guard',
-    desc: 'Pre-resolving DNS & safely fetching HTML (RFC 1918 private IP guard)',
-    icon: '🌐'
-  },
-  {
-    id: 'EXTRACTION',
-    number: 4,
-    label: 'Fact Extraction',
-    tool: 'extract_company_facts',
-    hint: 'Schema Parsing',
-    desc: 'Parsing raw page content into structured atomic fact claims',
-    icon: '🔬'
-  },
-  {
-    id: 'VERIFY',
-    number: 5,
-    label: 'Evidence Check',
-    tool: 'EvidenceVerifier',
-    hint: 'Provenance Audit',
-    desc: 'Sanitizing against prompt-injections & auditing source provenance',
-    icon: '🛡️'
-  },
-  {
-    id: 'SUFFICIENCY',
-    number: 6,
-    label: 'Sufficiency',
-    tool: 'SufficiencyEvaluator',
-    hint: 'Early Exit Check',
-    desc: 'Auditing collected claims against threshold to halt early & save budget',
-    icon: '⚖️'
-  },
-  {
-    id: 'SCORING',
-    number: 7,
-    label: 'Lead Scoring',
-    tool: 'DeterministicScoringEngine',
-    hint: 'Rubric (0–100)',
-    desc: 'Computing deterministic 40/20/25/15 rubric qualification fit score',
-    icon: '🎯'
-  },
-  {
-    id: 'OUTREACH',
-    number: 8,
-    label: 'Outreach Gen',
-    tool: 'GroundedOutreachGenerator',
-    hint: 'Fact-Grounded',
-    desc: 'Drafting personalized outreach strictly citing verified evidence IDs',
-    icon: '✍️'
-  },
-  {
-    id: 'SELF_VERIFY',
-    number: 9,
-    label: 'Self-Verify',
-    tool: 'FactualConsistencyAuditor',
-    hint: '0% Hallucinations',
-    desc: 'Auditing draft against hallucinations & verifying sentence quotes',
-    icon: '✓'
-  },
-  {
-    id: 'HUMAN_GATE',
-    number: 10,
-    label: 'Human Gate',
-    tool: 'ComplianceEnforcer',
-    hint: 'Human In Loop',
-    desc: 'Pausing autonomous outbound dispatch for explicit human approval',
-    icon: '🔒'
-  }
-];
-
 const EVALUATION_COMPANIES = [
   { name: 'Northstar Health', url: 'https://northstarhealth.example' },
   { name: 'Vertex Labs', url: 'https://vertexlabs.example' },
@@ -143,17 +40,12 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
   );
 
   const [loading, setLoading] = useState(false);
-  const [activeStepIndex, setActiveStepIndex] = useState<number>(-1);
-  const [liveLogs, setLiveLogs] = useState<string[]>([]);
+  const [activePhase, setActivePhase] = useState<string>('');
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
-  const [activeTool, setActiveTool] = useState<string>('');
-  const [showLiveTerminal, setShowLiveTerminal] = useState<boolean>(true);
-
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AgentRunResponse | null>(null);
   const [draftText, setDraftText] = useState('');
   const [isApproved, setIsApproved] = useState(false);
-  const shouldFastForwardRef = React.useRef(false);
 
   useEffect(() => {
     if (initialCompanyName) {
@@ -191,80 +83,35 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
     setError(null);
     setIsApproved(false);
     setResult(null);
-    setActiveStepIndex(0);
-    setActiveTool('AgentPlanner');
     setElapsedSeconds(0);
-    setShowLiveTerminal(true);
-    shouldFastForwardRef.current = false;
 
     const startTs = Date.now();
     const targetName = name.trim();
-    const targetUrl = url.trim() || `${targetName.toLowerCase().replace(/\s+/g, '')}.com`;
+    const targetUrl = url.trim();
 
-    const initialLogs = [
-      `[0.0s] [AgentPlanner] Brief ingested for target '${targetName}'. Target ICP: ${icp.slice(0, 48)}...`,
-      `[0.1s] [AgentPlanner] Formulating 4 initial evidence gaps: firmographics, primary presence, buying signals, source quotes.`
+    const phases = [
+      'Pre-resolving domain security & SSL validation...',
+      'Safely retrieving company website & live pages...',
+      'Extracting verified fact claims & intent signals...',
+      'Evaluating deterministic qualification fit score...',
+      'Synthesizing personalized B2B outreach draft...'
     ];
-    setLiveLogs(initialLogs);
 
-    // Live stopwatch counting up in tenths of a second
+    let phaseIdx = 0;
+    setActivePhase(phases[0]);
+    const phaseInterval = setInterval(() => {
+      phaseIdx = (phaseIdx + 1) % phases.length;
+      setActivePhase(phases[phaseIdx]);
+    }, 600);
+
     const timerInterval = setInterval(() => {
       setElapsedSeconds(Number(((Date.now() - startTs) / 1000).toFixed(1)));
     }, 100);
 
-    // Explicit 9-step research narrative: 1.5 seconds per step as requested
-    const stepNarratives = [
-      {
-        step: 0,
-        tool: 'AgentPlanner',
-        log: `[AgentPlanner] Analyzing identity & firmographics for '${targetName}'. Identified initial evidence gaps.`
-      },
-      {
-        step: 1,
-        tool: 'DynamicToolSelector',
-        log: `[DynamicToolSelector] Evaluating missing requirements. Selected tool: 'fetch_company_page' with SSRF security wrapper.`
-      },
-      {
-        step: 2,
-        tool: 'fetch_company_page',
-        log: `[SafeHTTPClient] Pre-resolving DNS for '${targetUrl}'. SSRF check: RFC 1918 & loopback private subnets blocked. Dispatched HTTP GET (200 OK).`
-      },
-      {
-        step: 3,
-        tool: 'extract_company_facts',
-        log: `[extract_company_facts] Ingested web payload. Sanitizing against prompt-injection overrides & extracting atomic fact claims with quotes...`
-      },
-      {
-        step: 4,
-        tool: 'EvidenceVerifier',
-        log: `[EvidenceVerifier] Cross-examining atomic claims against source URL. Stamping retrieval timestamp & provenance verification.`
-      },
-      {
-        step: 5,
-        tool: 'SufficiencyEvaluator',
-        log: `[SufficiencyEvaluator] Verified evidence criteria satisfied. Sufficiency threshold met at iteration 1 (Early stopping activated).`
-      },
-      {
-        step: 6,
-        tool: 'DeterministicScoringEngine',
-        log: `[DeterministicScoringEngine] Executing mathematical qualification rubric: ICP Fit (/40), Size/Industry (/20), Signals (/25), Evidence (/15)...`
-      },
-      {
-        step: 7,
-        tool: 'GroundedOutreachGenerator',
-        log: `[GroundedOutreachGenerator] Drafting personalized outreach message strictly citing verified evidence ID.`
-      },
-      {
-        step: 8,
-        tool: 'FactualConsistencyAuditor',
-        log: `[FactualConsistencyAuditor] Self-verification complete: 100% of outreach statements grounded in sources. Zero hallucinations verified.`
-      }
-    ];
-
     try {
       const input: CompanyInput = {
         name: targetName,
-        website: url.trim() || undefined,
+        website: targetUrl,
         icp: icp.trim(),
         target_industry: industry.trim() || undefined,
         desired_company_size: companySize.trim() || undefined,
@@ -272,35 +119,12 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
         product_offer: productOffer.trim() || undefined
       };
 
-      // Start actual backend agent workflow in parallel
-      const apiPromise = runAgentWorkflow(input);
-
-      // Walk through each step with 1.5 seconds per step so user can clearly see and read each stage
-      for (let i = 0; i < stepNarratives.length; i++) {
-        if (shouldFastForwardRef.current) break;
-        const s = stepNarratives[i];
-        setActiveStepIndex(s.step);
-        setActiveTool(s.tool);
-        const elapsed = ((Date.now() - startTs) / 1000).toFixed(1);
-        setLiveLogs((prev) => [...prev, `[${elapsed}s] ${s.log}`]);
-        // Deliberate 1.5s delay per step
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-      }
-
-      // Await real backend response
-      const response = await apiPromise;
-
+      const response = await runAgentWorkflow(input);
+      clearInterval(phaseInterval);
       clearInterval(timerInterval);
+
       const totalTime = ((Date.now() - startTs) / 1000).toFixed(2);
       setElapsedSeconds(Number(totalTime));
-      setActiveStepIndex(9); // Completed Gate
-      setActiveTool('ComplianceEnforcer');
-
-      setLiveLogs((prev) => [
-        ...prev,
-        `[${totalTime}s] [ComplianceEnforcer] Research workflow completed! Lead fit score: ${response.fit_score}/100. Dispatch paused for human approval.`
-      ]);
-
       setResult(response);
       setDraftText(response.outreach_draft?.body || '');
 
@@ -324,6 +148,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
       onLeadSaved(autoSavedLead);
       onToast(`Research complete for ${response.company_name}! Score: ${response.fit_score}/100`);
     } catch (err: any) {
+      clearInterval(phaseInterval);
       clearInterval(timerInterval);
       setError(err.message || 'An error occurred during agent research.');
       onToast(`Agent error: ${err.message || 'Failed'}`);
@@ -349,15 +174,6 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
     } catch {
       onToast('Failed to copy to clipboard.');
     }
-  };
-
-  const handleRegenerateDraft = () => {
-    if (!result) return;
-    const altBody = `Hi ${result.company_name} team,\n\nI came across a recent signal regarding ${
-      result.buying_signals[0]?.signal_type || 'your company growth'
-    }. Given your team's focus, I wanted to share how ${productOffer} helps teams streamline research and ground outbound in real context.\n\nWould you be open to a 10-minute chat next Tuesday?\n\nBest,\nAlex`;
-    setDraftText(altBody);
-    onToast('Alternative draft generated. Review and edit as needed.');
   };
 
   const handleApproveDraft = async () => {
@@ -407,16 +223,16 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
 
   return (
     <section className="page active" id="page-discover">
-      <div className="page-header">
+      <div className="page-header" style={{ marginBottom: '22px' }}>
         <div>
-          <h1>Discover a signal</h1>
-          <p>
+          <h1 style={{ color: '#17221d', letterSpacing: '-1.2px' }}>Discover a Signal</h1>
+          <p style={{ color: '#56665b' }}>
             Autonomous bounded research agent: discovers company facts, verifies evidence,
-            scores fit (0–100), and prepares an editable draft.
+            scores fit (0–100), and prepares an editable personalized draft.
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <span className="pill pill-high">Agent workflow</span>
+          <span className="pill pill-high">Agent Workflow</span>
           {result?.is_simulated && (
             <span className="pill pill-medium" title="Deterministic test benchmark data used">
               Test Benchmark Mode
@@ -426,12 +242,14 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
       </div>
 
       <div className="research-layout">
+        {/* Left Form Panel */}
         <div className="panel form-panel">
-          <h3>Research brief</h3>
-          <p>
-            Tell the agent who you want to reach and what kind of signal matters. Live
-            domains are safely fetched with SSRF protection; benchmark companies test
-            the deterministic evaluation set.
+          <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#17221d', marginBottom: '6px' }}>
+            Research Brief
+          </h3>
+          <p style={{ fontSize: '12px', color: '#58665b', marginBottom: '14px', lineHeight: 1.5 }}>
+            Provide the target company identity and your ideal customer profile. Live
+            domains are safely fetched with SSRF and anti-bot protection.
           </p>
 
           <div style={{ marginBottom: '16px' }}>
@@ -444,7 +262,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                 marginBottom: '6px'
               }}
             >
-              Quick Test Benchmarks (30-Case Suite):
+              Quick Test Benchmarks:
             </label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {EVALUATION_COMPANIES.map((comp) => (
@@ -454,7 +272,7 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                   className={`btn btn-small ${
                     name.toLowerCase() === comp.name.toLowerCase() ? 'btn-lime' : ''
                   }`}
-                  style={{ fontSize: '9px', padding: '3px 7px' }}
+                  style={{ fontSize: '10px', padding: '4px 8px' }}
                   onClick={() => handleSelectEvalCompany(comp.name, comp.url)}
                 >
                   {comp.name}
@@ -563,22 +381,15 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
               type="submit"
               disabled={loading}
               id="researchButton"
+              style={{ marginTop: '6px' }}
             >
               {loading ? (
                 <>
-                  <svg
-                    className="icon-svg animate-spin"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                    style={{ animation: 'spin 1s linear infinite' }}
-                  >
-                    <path d="M20 12a8 8 0 1 1-2.3-5.6" />
-                    <path d="M20 4v5h-5" />
-                  </svg>{' '}
-                  Running Autonomous Agent ({elapsedSeconds}s)...
+                  <span className="spinner" style={{ width: '14px', height: '14px' }} />
+                  Researching ({elapsedSeconds}s)...
                 </>
               ) : (
-                <>✦ Run research agent</>
+                <>✦ Run Research Agent</>
               )}
             </button>
 
@@ -597,303 +408,64 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                 <b>Error:</b> {error}
               </div>
             )}
-
-            <p className="field-hint" style={{ marginTop: '12px', marginBottom: 0 }}>
-              Live research bounded to 3 iterations. Bounded timeouts and safe HTTP client applied.
-            </p>
           </form>
         </div>
 
-        {/* RESULTS & REAL-TIME VISUAL EXECUTION PANEL */}
+        {/* Right Results Panel */}
         <div className="panel research-results" id="researchResults">
           {loading ? (
-            /* ========================================================
-               LIVE STEP-BY-STEP AGENT EXECUTION MONITOR
-               ======================================================== */
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* TOP HEADER STATUS */}
-              <div
-                style={{
-                  background: '#0c1410',
-                  borderRadius: '12px',
-                  padding: '16px 20px',
-                  border: '1px solid #1f3529',
-                  boxShadow: '0 10px 30px rgba(0,0,0,0.18)',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        width: '10px',
-                        height: '10px',
-                        borderRadius: '50%',
-                        background: '#b9f36b',
-                        boxShadow: '0 0 12px #b9f36b',
-                        animation: 'pulseGlow 1.2s infinite'
-                      }}
-                    />
-                    <div>
-                      <b style={{ color: '#ffffff', fontSize: '13px' }}>
-                        Autonomous Agent State Machine Active
-                      </b>
-                      <small style={{ color: '#8ca896', display: 'block', fontSize: '10px' }}>
-                        Target: <span style={{ color: '#b9f36b' }}>{name}</span> ·{' '}
-                        {url || 'Domain auto-discovery'} · Bounded loop (Max 3 iterations)
-                      </small>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span
-                      className="pill pill-high"
-                      style={{ fontSize: '11px', background: '#1c3426', color: '#b9f36b' }}
-                    >
-                      ⏱ {elapsedSeconds.toFixed(1)}s
-                    </span>
-                    <button
-                      type="button"
-                      className="btn btn-small"
-                      style={{
-                        background: 'rgba(255,255,255,0.08)',
-                        color: '#d1fae5',
-                        border: '1px solid #2d5a3c',
-                        padding: '3px 8px',
-                        fontSize: '9px',
-                        cursor: 'pointer'
-                      }}
-                      onClick={() => {
-                        shouldFastForwardRef.current = true;
-                      }}
-                    >
-                      ⚡ Skip to Results
-                    </button>
-                  </div>
-                </div>
-
-                {/* PROGRESS BAR */}
-                <div
-                  style={{
-                    height: '4px',
-                    background: '#16281e',
-                    borderRadius: '2px',
-                    margin: '14px 0 6px',
-                    overflow: 'hidden'
-                  }}
-                >
-                  <div
+            /* SLEEK REAL-TIME PROGRESS CARD (ZERO AI SLOP) */
+            <div
+              style={{
+                padding: '24px',
+                borderRadius: '12px',
+                background: '#ffffff',
+                border: '1px solid #dce5dd',
+                boxShadow: '0 4px 18px rgba(23, 34, 29, 0.04)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span
                     style={{
-                      height: '100%',
-                      width: `${Math.min(95, (activeStepIndex + 1) * 10)}%`,
-                      background: 'linear-gradient(90deg, #b9f36b, #4ade80, #38bdf8)',
-                      transition: 'width 0.4s ease'
+                      display: 'inline-block',
+                      width: '10px',
+                      height: '10px',
+                      borderRadius: '50%',
+                      background: '#243c22',
+                      boxShadow: '0 0 10px rgba(36, 60, 34, 0.4)',
+                      animation: 'subtleRadarPulse 1.4s infinite ease-in-out',
                     }}
                   />
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#7c9a85' }}>
-                  <span>Step {activeStepIndex + 1} of 10: {AGENT_WORKFLOW_STEPS[activeStepIndex]?.label}</span>
-                  <span>Active Tool: [{activeTool}]</span>
-                </div>
-              </div>
-
-              {/* 10-NODE INTERACTIVE STATE MACHINE DAG */}
-              <div
-                style={{
-                  background: '#ffffff',
-                  border: '1px solid #dbe8d6',
-                  borderRadius: '12px',
-                  padding: '16px',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.03)'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                  <b style={{ fontSize: '11px', color: '#17221d' }}>
-                    Step-by-Step State Machine DAG & Tool Execution:
-                  </b>
-                  <span style={{ fontSize: '10px', color: '#7c8980' }}>
-                    Live status updates as steps resolve
-                  </span>
-                </div>
-
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    overflowX: 'auto',
-                    paddingBottom: '8px'
-                  }}
-                >
-                  {AGENT_WORKFLOW_STEPS.map((step, idx) => {
-                    const isDone = idx < activeStepIndex;
-                    const isActive = idx === activeStepIndex;
-                    return (
-                      <React.Fragment key={step.id}>
-                        <div
-                          className={isActive ? 'agent-dag-node-active' : ''}
-                          style={{
-                            background: isDone ? '#edf7e6' : isActive ? '#f0fdf4' : '#fafcfa',
-                            border: `1.5px solid ${
-                              isDone ? '#8bc34a' : isActive ? '#b9f36b' : '#e0e7de'
-                            }`,
-                            borderRadius: '10px',
-                            padding: '8px 10px',
-                            fontSize: '9px',
-                            minWidth: '95px',
-                            textAlign: 'center',
-                            flexShrink: 0,
-                            transition: 'all 0.3s ease',
-                            boxShadow: isActive ? '0 0 16px rgba(185, 243, 107, 0.4)' : 'none'
-                          }}
-                        >
-                          <div style={{ fontSize: '13px', marginBottom: '2px' }}>
-                            {isDone ? '✓' : step.icon}
-                          </div>
-                          <b
-                            style={{
-                              display: 'block',
-                              color: isDone ? '#243c22' : isActive ? '#14532d' : '#88958a',
-                              fontSize: '9px'
-                            }}
-                          >
-                            {step.label}
-                          </b>
-                          <span
-                            className={`pill ${isDone ? 'pill-high' : isActive ? 'pill-high' : 'pill-muted'}`}
-                            style={{
-                              fontSize: '7px',
-                              padding: '1px 5px',
-                              marginTop: '4px',
-                              display: 'inline-block'
-                            }}
-                          >
-                            {isDone ? 'Done' : isActive ? 'In Progress' : 'Pending'}
-                          </span>
-                        </div>
-                        {idx < AGENT_WORKFLOW_STEPS.length - 1 && (
-                          <span
-                            style={{
-                              color: isDone ? '#8bc34a' : '#c8d4c5',
-                              fontSize: '11px',
-                              fontWeight: 'bold'
-                            }}
-                          >
-                            →
-                          </span>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* ACTIVE ACTION RADAR PANEL */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1.2fr 1fr',
-                  gap: '12px'
-                }}
-              >
-                <div
-                  style={{
-                    background: '#f8faf6',
-                    border: '1px solid #dce8d6',
-                    borderRadius: '10px',
-                    padding: '14px'
-                  }}
-                >
-                  <small style={{ color: '#526955', fontWeight: 700, textTransform: 'uppercase', fontSize: '9px' }}>
-                    Currently Executing Action
-                  </small>
-                  <h4 style={{ margin: '4px 0 2px', fontSize: '13px', color: '#17221d' }}>
-                    {AGENT_WORKFLOW_STEPS[activeStepIndex]?.desc || 'Initializing agent pipeline...'}
-                  </h4>
-                  <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
-                    <span className="pill pill-high" style={{ fontSize: '9px' }}>
-                      Tool: {activeTool}
-                    </span>
-                    <span className="pill pill-medium" style={{ fontSize: '9px' }}>
-                      {AGENT_WORKFLOW_STEPS[activeStepIndex]?.hint}
-                    </span>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    background: '#f8faf6',
-                    border: '1px solid #dce8d6',
-                    borderRadius: '10px',
-                    padding: '14px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <div style={{ fontSize: '10px', display: 'flex', alignItems: 'center', gap: '6px', color: '#17221d' }}>
-                    <span>🛡️</span> <b>SSRF Defense:</b> <span style={{ color: '#2d6a4f' }}>Active (DNS 0 Private IPs)</span>
-                  </div>
-                  <div style={{ fontSize: '10px', display: 'flex', alignItems: 'center', gap: '6px', color: '#17221d' }}>
-                    <span>🔒</span> <b>Injection Guard:</b> <span style={{ color: '#2d6a4f' }}>Sanitizing Scraped Text</span>
-                  </div>
-                  <div style={{ fontSize: '10px', display: 'flex', alignItems: 'center', gap: '6px', color: '#17221d' }}>
-                    <span>✓</span> <b>Hallucination Policy:</b> <span style={{ color: '#2d6a4f' }}>Zero Fabrications Enforced</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* LIVE OBSIDIAN TERMINAL CONSOLE */}
-              <div className="agent-live-terminal">
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    borderBottom: '1px solid #1a3023',
-                    paddingBottom: '8px',
-                    marginBottom: '10px',
-                    color: '#6e8e7a'
-                  }}
-                >
-                  <div style={{ display: 'flex', gap: '5px' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#eab308', display: 'inline-block' }} />
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
-                    <span style={{ marginLeft: '6px', fontSize: '9px', color: '#88a892' }}>
-                      dealsignal-agent-trace.log — Observable Stream
-                    </span>
-                  </div>
-                  <span style={{ fontSize: '9px', color: '#b9f36b' }}>Live Trace</span>
-                </div>
-
-                <div style={{ maxHeight: '160px', overflowY: 'auto' }}>
-                  {liveLogs.map((log, i) => (
-                    <div key={i} style={{ marginBottom: '3px' }}>
-                      <span style={{ color: '#86efac' }}>&gt;</span>{' '}
-                      <span
-                        style={{
-                          color: log.includes('SafeHTTPClient')
-                            ? '#38bdf8'
-                            : log.includes('Scoring')
-                            ? '#fde047'
-                            : log.includes('Self-verification')
-                            ? '#b9f36b'
-                            : '#d1fae5'
-                        }}
-                      >
-                        {log}
-                      </span>
-                    </div>
-                  ))}
                   <div>
-                    <span style={{ color: '#86efac' }}>&gt;</span>{' '}
-                    <span style={{ color: '#93c5fd' }}>Executing tool [{activeTool}]</span>
-                    <span className="agent-cursor" />
+                    <b style={{ color: '#17221d', fontSize: '14px' }}>
+                      Researching {name}
+                    </b>
+                    <small style={{ color: '#68776e', display: 'block', fontSize: '11px' }}>
+                      Target: {url || `${name.toLowerCase().replace(/\s+/g, '')}.com`} • Live Verification
+                    </small>
                   </div>
                 </div>
+                <span
+                  style={{
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    color: '#255e2e',
+                    fontVariantNumeric: 'tabular-nums',
+                    background: '#edf7e6',
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                  }}
+                >
+                  {elapsedSeconds}s elapsed
+                </span>
+              </div>
+
+              {/* Animated Scan Bar */}
+              <div className="scout-scan-bar" style={{ marginBottom: '14px' }} />
+
+              <div style={{ fontSize: '12px', color: '#4a5d51', fontWeight: 500 }}>
+                {activePhase || 'Analyzing company website & extracting verified signals...'}
               </div>
             </div>
           ) : !result ? (
@@ -902,300 +474,211 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
               <div className="empty-icon">⌕</div>
               <h3>Ready to find your next signal?</h3>
               <p>
-                Enter a company and your target customer profile. The agent will retrieve
-                evidence, detect verifiable signals, calculate an ICP fit score, and
-                prepare an outreach draft.
+                Enter a target company and website URL. The agent will retrieve live evidence,
+                detect verified intent triggers, compute an ICP fit score, and prepare an editable outreach draft.
               </p>
             </div>
           ) : (
-            /* ========================================================
-               COMPLETED RESULTS & GROUNDED OUTREACH VIEW
-               ======================================================== */
-            <div>
-              {/* CELEBRATORY COMPLETION BANNER */}
+            /* CLEAN, EXECUTIVE B2B DOSSIER (ZERO AI SLOP) */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* RESULT HEAD CARD */}
               <div
                 style={{
-                  background: 'linear-gradient(90deg, #162a1e, #102016)',
-                  border: '1px solid #2d5a3c',
+                  background: '#ffffff',
+                  border: '1px solid #dce5dd',
                   borderRadius: '12px',
-                  padding: '12px 18px',
-                  marginBottom: '16px',
+                  padding: '18px 22px',
                   display: 'flex',
-                  justifyContent: 'space-between',
                   alignItems: 'center',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
+                  justifyContent: 'space-between',
+                  boxShadow: '0 4px 14px rgba(23, 34, 29, 0.04)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '18px' }}>✓</span>
-                  <div>
-                    <b style={{ color: '#ffffff', fontSize: '12px' }}>
-                      Autonomous Research Complete in {elapsedSeconds ? `${elapsedSeconds}s` : '1.8s'}
-                    </b>
-                    <small style={{ color: '#9fc2aa', display: 'block', fontSize: '9px' }}>
-                      All 10 states executed with grounded evidence citations & 0 fabrications.
-                    </small>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    className="btn btn-small"
-                    style={{ background: 'rgba(255,255,255,0.08)', color: '#bbf7d0', border: '1px solid #2d5a3c' }}
-                    onClick={() => setShowLiveTerminal((prev) => !prev)}
-                  >
-                    {showLiveTerminal ? '▲ Hide Live Logs' : '▼ View Live Logs'}
-                  </button>
-                  <span className="pill pill-high" style={{ fontSize: '10px' }}>
-                    Score: {result.fit_score}/100
-                  </span>
-                </div>
-              </div>
-
-              {/* OPTIONAL TOGGLEABLE TERMINAL LOG IN RESULTS */}
-              {showLiveTerminal && liveLogs.length > 0 && (
-                <div className="agent-live-terminal" style={{ marginBottom: '16px' }}>
-                  <div
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <span
+                    className="company-logo"
                     style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '10px',
+                      background: '#243c22',
+                      color: '#b9f36b',
+                      fontSize: '18px',
+                      fontWeight: 800,
+                      display: 'inline-flex',
                       alignItems: 'center',
-                      borderBottom: '1px solid #1a3023',
-                      paddingBottom: '6px',
-                      marginBottom: '8px'
+                      justifyContent: 'center',
                     }}
                   >
-                    <span style={{ fontSize: '9px', color: '#88a892' }}>Execution Trace Stream</span>
-                    <span style={{ fontSize: '9px', color: '#b9f36b' }}>✓ Verified Run</span>
-                  </div>
-                  <div style={{ maxHeight: '110px', overflowY: 'auto' }}>
-                    {liveLogs.map((log, i) => (
-                      <div key={i} style={{ marginBottom: '2px', fontSize: '10px' }}>
-                        <span style={{ color: '#86efac' }}>&gt;</span> {log}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* RESULT HEAD CARD */}
-              <div className="result-head">
-                <div className="result-company">
-                  <span className="company-logo">
-                    {result.company_name[0]?.toUpperCase()}
+                    {result.company_name[0]?.toUpperCase() || 'C'}
                   </span>
                   <div>
-                    <h3>{result.company_name}</h3>
-                    <p>
-                      {result.domain || 'Target Prospect'} ·{' '}
+                    <h2 style={{ fontSize: '19px', fontWeight: 800, color: '#17221d', margin: '0 0 3px 0', letterSpacing: '-0.02em' }}>
+                      {result.company_name}
+                    </h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {result.domain && (
+                        <a
+                          href={result.domain.startsWith('http') ? result.domain : `https://${result.domain}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            fontSize: '12px',
+                            color: '#215c32',
+                            textDecoration: 'none',
+                            fontWeight: 600,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <span>{result.domain}</span>
+                          <span style={{ fontSize: '10px' }}>↗</span>
+                        </a>
+                      )}
                       {result.is_simulated ? (
-                        <span className="pill pill-medium" style={{ fontSize: '8px' }}>
-                          Verified Benchmark Data
+                        <span className="pill pill-medium" style={{ fontSize: '9px', padding: '2px 7px' }}>
+                          Benchmark Evaluation Data
                         </span>
                       ) : (
-                        <span className="pill pill-high" style={{ fontSize: '8px' }}>
-                          Live Verified Source
+                        <span className="pill pill-high" style={{ fontSize: '9px', padding: '2px 7px' }}>
+                          Verified Live Domain
                         </span>
                       )}
-                    </p>
+                    </div>
                   </div>
                 </div>
-                <div className="big-score">
-                  {result.fit_score}
-                  <small>FIT SCORE / 100</small>
+
+                {/* BIG SCORE */}
+                <div
+                  style={{
+                    textAlign: 'center',
+                    padding: '8px 18px',
+                    borderRadius: '10px',
+                    background: result.fit_score >= 80 ? '#edf7e6' : '#fff8ea',
+                    border: result.fit_score >= 80 ? '1px solid #c8e4ba' : '1px solid #fae1ad',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '28px',
+                      fontWeight: 800,
+                      color: result.fit_score >= 80 ? '#1b5e20' : '#8a5300',
+                      lineHeight: 1,
+                    }}
+                  >
+                    {result.fit_score}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '9px',
+                      fontWeight: 800,
+                      color: result.fit_score >= 80 ? '#1b5e20' : '#8a5300',
+                      textTransform: 'uppercase',
+                      marginTop: '3px',
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    FIT SCORE / 100
+                  </div>
                 </div>
               </div>
 
-              {/* 10-NODE DAG WORKFLOW IN COMPLETED STATE */}
+              {/* RUBRIC SCORE BREAKDOWN */}
               <div
                 style={{
-                  background: '#f4f8f1',
-                  border: '1px solid #dbe8d6',
-                  borderRadius: '12px',
-                  padding: '14px',
-                  margin: '14px 0 18px'
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(4, 1fr)',
+                  gap: '10px',
                 }}
               >
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '10px'
-                  }}
-                >
-                  <b style={{ fontSize: '11px', color: '#273c22' }}>
-                    Agentic State Machine & Tool Execution Flow
-                  </b>
-                  <span className="pill pill-high" style={{ fontSize: '9px' }}>
-                    Bounded State Machine Active
-                  </span>
-                </div>
-
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    overflowX: 'auto',
-                    paddingBottom: '4px'
-                  }}
-                >
-                  {AGENT_WORKFLOW_STEPS.map((node, i) => (
-                    <React.Fragment key={i}>
-                      <div
-                        style={{
-                          background: node.id === 'HUMAN_GATE' ? '#edf7e6' : '#fff',
-                          border: `1px solid ${node.id === 'HUMAN_GATE' ? '#8bc34a' : '#d2dfce'}`,
-                          borderRadius: '8px',
-                          padding: '6px 9px',
-                          fontSize: '9px',
-                          textAlign: 'center',
-                          flexShrink: 0,
-                          boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
-                        }}
-                      >
-                        <b style={{ display: 'block', color: '#243c22' }}>{node.label}</b>
-                        <small style={{ color: '#7a8c7b', fontSize: '8px' }}>{node.hint}</small>
-                      </div>
-                      {i < 9 && <span style={{ color: '#889f89', fontSize: '10px' }}>→</span>}
-                    </React.Fragment>
-                  ))}
-                </div>
-              </div>
-
-              {/* RUBRIC BREAKDOWN CARDS */}
-              <div className="score-breakdown">
-                <div className="score-subcard">
-                  <div className="score-subcard-title">ICP Fit (Max 40)</div>
-                  <div className="score-subcard-val">
-                    {result.lead_score_details.icp_fit_score} / 40
+                <div style={{ background: '#ffffff', border: '1px solid #dce5dd', borderRadius: '10px', padding: '12px 14px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#68776e', textTransform: 'uppercase' }}>ICP Fit</div>
+                  <div style={{ fontSize: '16px', fontWeight: 800, color: '#17221d', marginTop: '4px' }}>
+                    {result.lead_score_details.icp_fit_score} <span style={{ fontSize: '11px', color: '#88988e' }}>/ 40</span>
                   </div>
                 </div>
-                <div className="score-subcard">
-                  <div className="score-subcard-title">Size/Industry (Max 20)</div>
-                  <div className="score-subcard-val">
-                    {result.lead_score_details.size_industry_fit_score} / 20
+                <div style={{ background: '#ffffff', border: '1px solid #dce5dd', borderRadius: '10px', padding: '12px 14px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#68776e', textTransform: 'uppercase' }}>Size & Industry</div>
+                  <div style={{ fontSize: '16px', fontWeight: 800, color: '#17221d', marginTop: '4px' }}>
+                    {result.lead_score_details.size_industry_fit_score} <span style={{ fontSize: '11px', color: '#88988e' }}>/ 20</span>
                   </div>
                 </div>
-                <div className="score-subcard">
-                  <div className="score-subcard-title">Signal Relevance (Max 25)</div>
-                  <div className="score-subcard-val">
-                    {result.lead_score_details.signal_relevance_score} / 25
+                <div style={{ background: '#ffffff', border: '1px solid #dce5dd', borderRadius: '10px', padding: '12px 14px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#68776e', textTransform: 'uppercase' }}>Signal Relevance</div>
+                  <div style={{ fontSize: '16px', fontWeight: 800, color: '#17221d', marginTop: '4px' }}>
+                    {result.lead_score_details.signal_relevance_score} <span style={{ fontSize: '11px', color: '#88988e' }}>/ 25</span>
                   </div>
                 </div>
-                <div className="score-subcard">
-                  <div className="score-subcard-title">Evidence Quality (Max 15)</div>
-                  <div className="score-subcard-val">
-                    {result.lead_score_details.evidence_quality_score} / 15
+                <div style={{ background: '#ffffff', border: '1px solid #dce5dd', borderRadius: '10px', padding: '12px 14px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#68776e', textTransform: 'uppercase' }}>Evidence Rigor</div>
+                  <div style={{ fontSize: '16px', fontWeight: 800, color: '#17221d', marginTop: '4px' }}>
+                    {result.lead_score_details.evidence_quality_score} <span style={{ fontSize: '11px', color: '#88988e' }}>/ 15</span>
                   </div>
                 </div>
               </div>
 
-              {result.lead_score_details.uncertainty_deduction > 0 && (
+              {/* RECOMMENDED NEXT ACTION */}
+              {result.lead_score_details.recommended_action && (
                 <div
                   style={{
-                    background: '#fffbeb',
-                    border: '1px solid #fef3c7',
+                    padding: '10px 14px',
                     borderRadius: '8px',
-                    padding: '8px 12px',
-                    marginTop: '8px',
-                    fontSize: '11px',
-                    color: '#92400e'
+                    background: '#f4f8f4',
+                    border: '1px solid #cce0cc',
+                    fontSize: '12px',
+                    color: '#1e3825',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontWeight: 600,
                   }}
                 >
-                  <b>Uncertainty Penalty:</b> -
-                  {result.lead_score_details.uncertainty_deduction} pts deducted for missing or unverified signals.
+                  <span style={{ color: '#255e2e' }}>✦</span>
+                  <span>{result.lead_score_details.recommended_action}</span>
                 </div>
               )}
 
-              {/* Recommended Next Action */}
-              <div
-                style={{
-                  background: '#f8faf7',
-                  border: '1px solid #e1e9df',
-                  borderRadius: '8px',
-                  padding: '10px 14px',
-                  marginTop: '12px',
-                  fontSize: '11px',
-                  color: '#2d3f32'
-                }}
-              >
-                <b>Recommended Next Action:</b> {result.lead_score_details.recommended_action}
-              </div>
-
-              <div className="divider"></div>
-
-              {/* Buying Signals */}
-              <div className="result-section">
-                <h4>Verified buying signals ({result.buying_signals.length})</h4>
-                <div className="signals-list">
-                  {result.buying_signals.map((sig, idx) => (
-                    <div className="signal-card" key={idx}>
-                      <div className="signal-card-title">
-                        {sig.signal_type}
-                        <span className="pill pill-high">{sig.confidence_level} confidence</span>
-                      </div>
-                      <p>{sig.supporting_evidence}</p>
-                      <div className="signal-meta">
-                        <span>Why it signals intent: {sig.why_intent}</span>
-                        {sig.source_url && (
-                          <a
-                            href={sig.source_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="source-link"
-                          >
-                            Source proof ↗
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Evidence Provenance Matrix */}
-              {result.evidence_items?.length > 0 && (
-                <div className="result-section">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h4>Evidence Provenance & Grounding Matrix</h4>
-                    <span className="pill pill-high" style={{ fontSize: '9px' }}>
-                      {result.evidence_items.length} Verified Sources
-                    </span>
-                  </div>
-                  <div className="evidence-grid" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
-                    {result.evidence_items.map((ev, idx) => (
+              {/* VERIFIED BUYING SIGNALS */}
+              {result.buying_signals && result.buying_signals.length > 0 && (
+                <div style={{ background: '#ffffff', border: '1px solid #dce5dd', borderRadius: '12px', padding: '18px 20px' }}>
+                  <h4 style={{ fontSize: '13px', fontWeight: 800, color: '#17221d', margin: '0 0 12px 0' }}>
+                    Verified Buying Signals ({result.buying_signals.length})
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {result.buying_signals.map((sig, idx) => (
                       <div
                         key={idx}
                         style={{
-                          background: '#f8faf6',
-                          border: '1px solid #e2ece0',
+                          padding: '12px 14px',
                           borderRadius: '8px',
-                          padding: '10px 12px',
-                          fontSize: '11px'
+                          background: '#fafcfa',
+                          border: '1px solid #e1ebe2',
                         }}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                          <b style={{ color: '#253d26' }}>{ev.source_title || 'Verified Web Excerpt'}</b>
-                          <span style={{ fontSize: '9px', color: '#687d6d' }}>
-                            Retrieved: {new Date(ev.timestamp).toLocaleTimeString()}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#17221d' }}>
+                            {sig.signal_type}
+                          </span>
+                          <span className="pill pill-high" style={{ fontSize: '9px', padding: '2px 7px' }}>
+                            {sig.confidence_level} confidence
                           </span>
                         </div>
-                        <p style={{ margin: 0, fontStyle: 'italic', color: '#4a5d4d' }}>
-                          "{ev.quote}"
+                        <p style={{ fontSize: '12px', color: '#4a5d51', margin: '0 0 8px 0', lineHeight: 1.5 }}>
+                          "{sig.supporting_evidence}"
                         </p>
-                        <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <a
-                            href={ev.source_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ fontSize: '10px', color: '#2d6a4f', textDecoration: 'underline' }}
-                          >
-                            {ev.source_url} ↗
-                          </a>
-                          <span className="pill pill-high" style={{ fontSize: '8px' }}>
-                            {(ev.confidence * 100).toFixed(0)}% Provenance Confidence
-                          </span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: '#68776e' }}>
+                          <span>Intent context: {sig.why_intent}</span>
+                          {sig.source_url && (
+                            <a
+                              href={sig.source_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ color: '#255e2e', fontWeight: 600, textDecoration: 'none' }}
+                            >
+                              Source Proof ↗
+                            </a>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1203,155 +686,145 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
                 </div>
               )}
 
-              <div className="divider"></div>
-
-              {/* Outreach Draft */}
-              <div className="result-section">
-                <div className="draft-header">
-                  <h4>Grounded outreach draft (Editable)</h4>
+              {/* GROUNDED OUTREACH DRAFT (CORE WORKFLOW) */}
+              <div style={{ background: '#ffffff', border: '1px solid #dce5dd', borderRadius: '12px', padding: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#17221d', margin: 0 }}>
+                    Personalized Outreach Email
+                  </h4>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <span className="pill pill-high" title="No ungrounded statements detected">
-                      ✓ 0 Fabrications
-                    </span>
                     {isApproved ? (
-                      <span className="pill pill-high">Approved by Human</span>
+                      <span className="pill pill-high" style={{ fontSize: '10px' }}>
+                        ✓ Approved
+                      </span>
                     ) : (
-                      <span className="pill pill-medium">Human review required</span>
+                      <span className="pill pill-medium" style={{ fontSize: '10px' }}>
+                        Human Review Required
+                      </span>
                     )}
                   </div>
                 </div>
 
-                <div className="email-preview">
-                  <div className="email-subject">
-                    Subject: {result.outreach_draft?.subject || 'Reaching out'}
+                {/* Email container */}
+                <div
+                  style={{
+                    background: '#fbfcfa',
+                    border: '1px solid #dbe5dc',
+                    borderRadius: '8px',
+                    padding: '16px',
+                    marginBottom: '16px',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      color: '#17221d',
+                      paddingBottom: '10px',
+                      marginBottom: '12px',
+                      borderBottom: '1px solid #e5ede6',
+                    }}
+                  >
+                    Subject: {result.outreach_draft?.subject || `Thought on ${result.company_name}`}
                   </div>
+
                   <textarea
                     id="draftText"
-                    className="field"
                     style={{
                       width: '100%',
-                      border: '0',
+                      minHeight: '150px',
+                      border: 'none',
                       background: 'transparent',
-                      minHeight: '160px',
-                      fontSize: '11px',
-                      lineHeight: '1.75',
-                      color: '#5f6e63',
-                      padding: 0,
-                      margin: 0,
+                      fontFamily: 'inherit',
+                      fontSize: '12px',
+                      lineHeight: '1.7',
+                      color: '#27382d',
                       resize: 'vertical',
-                      outline: 'none'
+                      outline: 'none',
+                      padding: 0,
                     }}
                     value={draftText}
                     onChange={(e) => setDraftText(e.target.value)}
                   />
-                  {result.outreach_draft?.personalization_rationale && (
-                    <div
-                      style={{
-                        fontSize: '9px',
-                        color: '#7d8e82',
-                        borderTop: '1px dashed #e2e8e1',
-                        paddingTop: '8px',
-                        marginTop: '8px'
-                      }}
-                    >
-                      <b>Grounded context:</b>{' '}
-                      {result.outreach_draft.personalization_rationale}
-                    </div>
-                  )}
                 </div>
 
-                <div className="result-actions">
-                  <button className="btn btn-dark btn-small" onClick={handleSaveProspect}>
-                    ＋ Save prospect
-                  </button>
-                  <button className="btn btn-small" onClick={handleCopyDraft}>
-                    Copy email
-                  </button>
-                  <button className="btn btn-small" onClick={handleRegenerateDraft}>
-                    ↻ Alternative draft
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={handleSaveProspect}
+                    className="btn btn-dark"
+                    style={{ fontSize: '12px', padding: '8px 16px', fontWeight: 700 }}
+                  >
+                    ＋ Save Prospect
                   </button>
                   <button
-                    className={`btn btn-small ${isApproved ? 'btn-lime' : ''}`}
-                    onClick={handleApproveDraft}
+                    type="button"
+                    onClick={handleCopyDraft}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '12px', padding: '8px 14px', fontWeight: 600 }}
                   >
-                    ✓ {isApproved ? 'Approved' : 'Mark approved'}
+                    Copy Email
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleApproveDraft}
+                    className={`btn ${isApproved ? 'btn-lime' : ''}`}
+                    style={{ fontSize: '12px', padding: '8px 14px', fontWeight: 700 }}
+                  >
+                    {isApproved ? '✓ Approved' : 'Mark Approved'}
                   </button>
                 </div>
               </div>
 
-              <div className="divider"></div>
-
-              {/* Agent Execution Trace & Interactive Tool Inspector */}
-              <div className="result-section">
-                <div
+              {/* COLLAPSIBLE AUDIT TRACE (CLEAN ACCORDION, ZERO AI SLOP) */}
+              {result.execution_trace && result.execution_trace.length > 0 && (
+                <details
                   style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '8px'
+                    background: '#ffffff',
+                    border: '1px solid #dce5dd',
+                    borderRadius: '10px',
+                    padding: '12px 16px',
+                    fontSize: '12px',
+                    color: '#68776e',
+                    cursor: 'pointer',
                   }}
                 >
-                  <h4>Interactive Agent Execution Trace & Tool Inspector</h4>
-                  <span style={{ fontSize: '9px', color: '#889a8c' }}>
-                    {result.execution_trace?.length || 0} bounded steps · Click step to inspect inputs & outputs
-                  </span>
-                </div>
-
-                <div className="trace">
-                  {result.execution_trace?.map((step, idx) => {
-                    const isSuccess = step.status === 'completed';
-                    const isWarning = step.status === 'warning';
-                    return (
+                  <summary style={{ fontWeight: 700, color: '#27382d', outline: 'none' }}>
+                    Audit & Verification Trace ({result.execution_trace.length} steps completed in {elapsedSeconds}s)
+                  </summary>
+                  <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {result.execution_trace.map((step, idx) => (
                       <div
-                        className="trace-line"
                         key={idx}
                         style={{
-                          flexDirection: 'column',
-                          cursor: 'pointer',
-                          borderBottom: '1px solid rgba(255,255,255,0.05)',
-                          paddingBottom: '6px'
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '6px 10px',
+                          background: '#f8faf7',
+                          borderRadius: '6px',
+                          border: '1px solid #e5ede6',
+                          fontSize: '11px',
                         }}
                       >
-                        <div style={{ display: 'flex', width: '100%', alignItems: 'baseline', gap: '8px' }}>
-                          <span className={isSuccess ? 'ok' : isWarning ? 'warn' : 'err'}>
-                            {isSuccess ? '✓' : isWarning ? '!' : '✕'}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ color: step.status === 'completed' ? '#255e2e' : '#b45309', fontWeight: 800 }}>
+                            {step.status === 'completed' ? '✓' : '•'}
                           </span>
-                          <div>
-                            <b style={{ color: '#edf7e6' }}>[{step.step_name}]</b> (
-                            <span className="muted">{step.tool_used}</span>):{' '}
-                            {step.decision_summary}
-                            {step.error && (
-                              <span className="err" style={{ display: 'block' }}>
-                                Error: {step.error}
-                              </span>
-                            )}
-                          </div>
-                          <span className="trace-duration">
-                            {step.duration_ms ? `${step.duration_ms}ms` : ''}
-                          </span>
+                          <span style={{ fontWeight: 600, color: '#17221d' }}>{step.step_name}:</span>
+                          <span style={{ color: '#4a5d51' }}>{step.decision_summary}</span>
                         </div>
-
-                        {step.details && Object.keys(step.details).length > 0 && (
-                          <div
-                            style={{
-                              marginLeft: '20px',
-                              marginTop: '4px',
-                              padding: '6px 8px',
-                              background: 'rgba(0,0,0,0.3)',
-                              borderRadius: '4px',
-                              fontSize: '9px',
-                              color: '#a3baa7'
-                            }}
-                          >
-                            <span style={{ color: '#b9f36b', fontWeight: 600 }}>Observable Tool Data:</span>{' '}
-                            {JSON.stringify(step.details)}
-                          </div>
+                        {step.duration_ms !== undefined && (
+                          <span style={{ color: '#88988e', fontSize: '10px', fontVariantNumeric: 'tabular-nums' }}>
+                            {step.duration_ms}ms
+                          </span>
                         )}
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
+                    ))}
+                  </div>
+                </details>
+              )}
             </div>
           )}
         </div>

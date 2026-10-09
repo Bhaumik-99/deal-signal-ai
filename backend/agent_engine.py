@@ -205,13 +205,25 @@ class BoundedAgentStateMachine:
             extracted_claims = facts_res.data.get("claims", [])
             for c in extracted_claims:
                 state.fact_claims.append(c)
-                # Form buying signal if claim is relevant
+                claim_text = c.get("claim", "").lower()
+                is_real_signal = any(k in claim_text for k in ["hiring", "headcount", "recruiting", "raised", "series", "seed", "funding", "released", "launched", "unveiled", "expanded", "partner"])
+                if is_real_signal:
+                    state.buying_signals.append({
+                        "signal_type": c.get("claim", "Company growth activity"),
+                        "supporting_evidence": c.get("evidence_excerpt", ""),
+                        "source_url": c.get("source_url", source_url),
+                        "confidence_level": "high",
+                        "why_intent": f"Verified event at {state.company_input.name} indicates active operational developments."
+                    })
+
+            if not state.buying_signals and extracted_claims:
+                first_c = extracted_claims[0]
                 state.buying_signals.append({
-                    "signal_type": c.get("claim", "Company activity"),
-                    "supporting_evidence": c.get("evidence_excerpt", ""),
-                    "source_url": c.get("source_url", source_url),
-                    "confidence_level": "high",
-                    "why_intent": f"Verified event at {state.company_input.name} indicates active operational developments."
+                    "signal_type": "Active commercial presence",
+                    "supporting_evidence": first_c.get("evidence_excerpt", f"Verified enterprise operations at {state.company_input.name}."),
+                    "source_url": first_c.get("source_url", source_url),
+                    "confidence_level": "medium",
+                    "why_intent": f"Verified public enterprise presence at {state.company_input.name}."
                 })
 
             if "Primary web presence" in state.evidence_gaps:

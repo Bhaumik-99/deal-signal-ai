@@ -162,24 +162,36 @@ class LLMService:
         Generates a professional B2B outreach draft grounded solely in verified facts.
         """
         primary_signal = signals[0] if signals else None
-        signal_text = primary_signal.signal_type.lower() if primary_signal else "recent growth activity"
+        signal_text = primary_signal.signal_type.lower() if primary_signal else "commercial focus"
         evidence_quote = primary_signal.supporting_evidence if primary_signal else (
-            evidence_items[0].quote if evidence_items else "your ongoing market initiatives"
+            evidence_items[0].quote if evidence_items else "ongoing customer solutions"
         )
         source_ref = primary_signal.source_url if primary_signal else (
             evidence_items[0].source_url if evidence_items else "public company updates"
         )
 
-        subject = f"Thought on {company_name}'s {signal_text}"
+        if primary_signal and "hiring" in signal_text:
+            subject = f"Thought on {company_name}'s team expansion"
+            opening = f"Hi {company_name} team,\n\nI noticed that your organization has been actively growing headcount."
+        elif primary_signal and "funding" in signal_text:
+            subject = f"Congratulations on {company_name}'s recent funding"
+            opening = f"Hi {company_name} team,\n\nCongratulations on your recent financing milestone."
+        elif primary_signal and "product" in signal_text:
+            subject = f"Thought on {company_name}'s recent product launch"
+            opening = f"Hi {company_name} team,\n\nI saw {company_name}'s recent product and platform updates."
+        elif primary_signal and "expansion" in signal_text:
+            subject = f"Thought on {company_name}'s market expansion"
+            opening = f"Hi {company_name} team,\n\nCongratulations on {company_name}'s recent market expansion."
+        else:
+            subject = f"Accelerating outbound pipeline for {company_name}"
+            opening = f"Hi {company_name} team,\n\nI was reviewing {company_name}'s commercial focus and customer solutions."
 
         body = (
-            f"Hi {company_name} team,\n\n"
-            f"I noticed a timely update regarding {signal_text} "
-            f"(\"{evidence_quote.strip()}\").\n\n"
-            f"When teams expand and scale operations, identifying high-signal prospects without manual tab-juggling "
-            f"becomes a major lever. {product_offer} helps revenue teams spot verified buying triggers "
-            f"and prepare personalized conversations with human oversight before anything is sent.\n\n"
-            f"Would 15 minutes next Tuesday be helpful to explore whether this aligns with your outbound roadmap?\n\n"
+            f"{opening}\n\n"
+            f"When teams scale operations and go-to-market motions, identifying high-fit accounts with verified buying "
+            f"triggers without manual research friction becomes a major lever. {product_offer} helps revenue teams "
+            f"spot qualified prospect accounts and prioritize outreach with human oversight.\n\n"
+            f"Would 15 minutes next week be helpful to explore whether this aligns with {company_name}'s pipeline strategy?\n\n"
             f"Best regards,\n"
             f"Alex Smith\n"
             f"DealSignal AI"
@@ -188,11 +200,10 @@ class LLMService:
         return OutreachDraft(
             subject=subject,
             body=body,
-            business_context=f"Contacting {company_name} following detected {signal_text}.",
+            business_context=f"Contacting {company_name} regarding verified {signal_text}.",
             supporting_evidence_refs=[source_ref],
             personalization_rationale=(
-                f"Tied opening hook directly to verified evidence (\"{evidence_quote[:80]}...\") "
-                f"rather than generic promotional claims."
+                f"Tied opening hook to verified business focus at {company_name} without clumsy quoting of raw website navigation."
             )
         )
 
