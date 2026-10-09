@@ -491,13 +491,13 @@ async def run_evaluation_benchmark():
         raise HTTPException(status_code=500, detail=f"Evaluation execution failed: {str(e)}")
 
 
-# ================== GLOBAL INTERNET PROSPECTOR (SCRAPLING) ==================
+# ================== GLOBAL REAL-TIME INTERNET PROSPECTOR ==================
 
 @app.post("/api/prospects/search", response_model=GlobalSearchResponse)
 async def search_global_prospects(criteria: GlobalSearchCriteria):
     """
-    Search prospective B2B companies across the internet using Scrapling
-    strictly guided by mandatory search criteria.
+    Search prospective B2B companies across the internet in real time
+    strictly guided by mandatory search criteria with zero pre-loaded data.
     """
     try:
         return GlobalProspectorService.search_internet(criteria)

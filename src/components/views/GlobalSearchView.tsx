@@ -17,7 +17,7 @@ const SECTOR_OPTIONS = [
   { value: 'cybersecurity', label: 'Cybersecurity & Cloud Protection' },
   { value: 'supply_chain', label: 'Logistics & Supply Chain Tech' },
   { value: 'cleantech', label: 'CleanTech & Renewable Energy' },
-  { value: 'all_sectors', label: 'All Sectors (Global Scout)' },
+  { value: 'all_sectors', label: 'All Sectors (Global Web Scout)' },
 ];
 
 const COMPANY_SIZE_OPTIONS = [
@@ -45,12 +45,12 @@ const REGION_OPTIONS = [
 ];
 
 const SIGNAL_OPTIONS = [
-  { value: 'Rapid Engineering & Product Hiring', label: '⚡ Rapid Engineering & Product Hiring' },
-  { value: 'Recent Growth Capital / Series Funding', label: '💰 Recent Growth Capital / Series Funding' },
-  { value: 'Cloud, CRM & AI Modernization', label: '☁️ Cloud, CRM & AI Stack Modernization' },
-  { value: 'Global Enterprise Product Expansion', label: '🌍 Global Enterprise Expansion & Launches' },
-  { value: 'Executive Leadership Hires (VP/CRO/CMO)', label: '👔 New Executive Leadership (VP Sales / CMO)' },
-  { value: 'all_signals', label: '🎯 Any Verified Growth & Intent Signal' },
+  { value: 'Rapid Engineering & Product Hiring', label: 'Rapid Engineering & Product Hiring' },
+  { value: 'Recent Growth Capital / Series Funding', label: 'Recent Growth Capital / Series Funding' },
+  { value: 'Cloud, CRM & AI Modernization', label: 'Cloud, CRM & AI Stack Modernization' },
+  { value: 'Global Enterprise Product Expansion', label: 'Global Enterprise Expansion & Launches' },
+  { value: 'Executive Leadership Hires (VP/CRO/CMO)', label: 'New Executive Leadership (VP Sales / CMO)' },
+  { value: 'all_signals', label: 'Any Verified Growth & Intent Signal' },
 ];
 
 const ROLE_OPTIONS = [
@@ -60,6 +60,112 @@ const ROLE_OPTIONS = [
   { value: 'Chief Executive Officer / Founder', label: 'CEO / Co-Founder / Executive Suite' },
   { value: 'CFO / VP Finance & Procurement', label: 'CFO / VP Finance & Procurement' },
 ];
+
+// Clean SVGs without emojis
+const GlobeIcon: React.FC<{ size?: number; color?: string }> = ({ size = 16, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="2" y1="12" x2="22" y2="12" />
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+  </svg>
+);
+
+const SearchIcon: React.FC<{ size?: number; color?: string }> = ({ size = 16, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8" />
+    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+);
+
+const SignalIcon: React.FC<{ size?: number; color?: string }> = ({ size = 16, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+);
+
+const BuildingIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+    <line x1="9" y1="22" x2="9" y2="22.01" />
+    <line x1="15" y1="22" x2="15" y2="22.01" />
+    <line x1="9" y1="6" x2="9" y2="6.01" />
+    <line x1="15" y1="6" x2="15" y2="6.01" />
+    <line x1="9" y1="10" x2="9" y2="10.01" />
+    <line x1="15" y1="10" x2="15" y2="10.01" />
+    <line x1="9" y1="14" x2="9" y2="14.01" />
+    <line x1="15" y1="14" x2="15" y2="14.01" />
+    <line x1="9" y1="18" x2="9" y2="18.01" />
+    <line x1="15" y1="18" x2="15" y2="18.01" />
+  </svg>
+);
+
+const UsersIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+);
+
+const DollarIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="1" x2="12" y2="23" />
+    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+  </svg>
+);
+
+const MapPinIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+    <circle cx="12" cy="10" r="3" />
+  </svg>
+);
+
+const CompassIcon: React.FC<{ size?: number; color?: string }> = ({ size = 16, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+  </svg>
+);
+
+const BookmarkIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+  </svg>
+);
+
+const CheckIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+const ExternalLinkIcon: React.FC<{ size?: number; color?: string }> = ({ size = 13, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    <polyline points="15 3 21 3 21 9" />
+    <line x1="10" y1="14" x2="21" y2="3" />
+  </svg>
+);
+
+const AlertTriangleIcon: React.FC<{ size?: number; color?: string }> = ({ size = 16, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+    <line x1="12" y1="9" x2="12" y2="13" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+);
+
+const DocumentTextIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+    <polyline points="10 9 9 9 8 9" />
+  </svg>
+);
 
 export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
   onNavigateToDiscover,
@@ -116,12 +222,12 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
     }, 1000);
 
     const stepMessages = [
-      'Initializing Scrapling stealth HTTP fetcher (d4vinci/Scrapling)...',
-      'Querying public web databases & company index registries...',
-      'Bypassing anti-bot friction with TLS fingerprint spoofing...',
-      'Scraping live candidate homepages, newsrooms & careers text...',
-      'Grading ICP fit, revenue scale & executive intent signals...',
-      'Synthesizing verified prospect dossier and citations...',
+      'Issuing live web search queries across candidate domains...',
+      'Discovering active companies matching sector and regional criteria...',
+      'Bypassing bot friction and extracting live candidate websites...',
+      'Live scraping homepages, product announcements, and career feeds...',
+      'Evaluating headcount scale, revenue fit, and intent triggers...',
+      'Synthesizing verified prospect dossier with live scraped citations...',
     ];
 
     let stepIdx = 0;
@@ -143,9 +249,9 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
     try {
       const response = await searchGlobalProspects(criteria);
       setSearchResult(response);
-      onToast(`Scrapling found ${response.total_found} verified prospects in ${response.duration_ms}ms!`);
+      onToast(`Discovered ${response.total_found} verified prospects in ${response.duration_ms}ms.`);
     } catch (err: any) {
-      setError(err.message || 'Global search failed. Please try again.');
+      setError(err.message || 'Live web search failed. Please try again.');
       onToast(`Search error: ${err.message || 'Failed'}`);
     } finally {
       clearInterval(timer);
@@ -165,13 +271,13 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
       score: company.fit_score,
       status: 'Review needed',
       type: 'Company',
-      source: 'Scrapling Global Web Search',
+      source: 'Live Web Search',
       is_approved: false,
     };
 
     onLeadSaved(newLead);
     setSavedLeadIds((prev) => new Set(prev).add(company.id));
-    onToast(`Saved ${company.company_name} to Leads queue!`);
+    onToast(`Saved ${company.company_name} to Leads pipeline.`);
   };
 
   return (
@@ -192,38 +298,35 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                 textTransform: 'uppercase',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.3rem',
+                gap: '0.4rem',
               }}
             >
-              <span>🌐</span> Global Internet Scout
+              <GlobeIcon size={14} color="#34d399" />
+              Live Internet Scout
             </span>
-            <a
-              href="https://github.com/d4vinci/Scrapling"
-              target="_blank"
-              rel="noopener noreferrer"
+            <span
               style={{
                 fontSize: '0.75rem',
                 color: '#819080',
-                textDecoration: 'none',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.25rem',
+                gap: '0.35rem',
                 border: '1px solid var(--border-color)',
                 padding: '0.18rem 0.5rem',
                 borderRadius: '6px',
                 background: 'var(--surface-color)',
               }}
             >
-              <span>⚡ Powered by d4vinci/Scrapling</span>
-              <span style={{ color: '#34d399', fontWeight: 600 }}>• 100% Free</span>
-            </a>
+              <SignalIcon size={12} color="#34d399" />
+              <span>Real-Time Web Intelligence</span>
+              <span style={{ color: '#34d399', fontWeight: 600 }}>• Zero Stale Data</span>
+            </span>
           </div>
           <h1 className="view-title" style={{ fontSize: '1.6rem', margin: 0 }}>
             Global Internet Prospect Search
           </h1>
           <p className="view-desc" style={{ marginTop: '0.35rem', maxWidth: '780px' }}>
-            Scrapes the live web across global companies using the high-performance stealth scraper <strong>Scrapling</strong>.
-            All 6 criteria questions are <strong>mandatory</strong> with pre-set selectors to ensure rigorous target qualification with zero paid API costs.
+            Searches the entire internet in real time to locate matching prospective accounts. Every search crawls the live web on demand with zero pre-loaded records. All 6 questions are <strong>mandatory</strong>.
           </p>
         </div>
       </div>
@@ -241,7 +344,8 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
           <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span>🧭</span> Mandatory Prospecting Criteria
+            <CompassIcon size={18} color="#34d399" />
+            Mandatory Prospecting Criteria
           </h2>
           <span style={{ fontSize: '0.8rem', color: '#f87171', fontWeight: 500 }}>
             * All 6 selections are required
@@ -440,7 +544,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                 gap: '0.5rem',
               }}
             >
-              <span>⚠️</span>
+              <AlertTriangleIcon size={16} color="#f87171" />
               <span>{error}</span>
             </div>
           )}
@@ -457,7 +561,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
           >
             <div style={{ fontSize: '0.8rem', color: '#819080', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#34d399' }} />
-              Scrapling Free Stealth Engine Active • No Rate Limits or Paid Search Keys
+              Real-Time Search Active • Live Web Scraping with 0 Pre-Stored Records
             </div>
 
             <button
@@ -477,11 +581,12 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
               {loading ? (
                 <>
                   <span className="spinner" style={{ width: '16px', height: '16px' }} />
-                  Searching Internet ({elapsedSec}s)...
+                  Searching Live Web ({elapsedSec}s)...
                 </>
               ) : (
                 <>
-                  <span>🔍</span> Search Entire Internet via Scrapling
+                  <SearchIcon size={16} color="#ffffff" />
+                  Search Live Internet
                 </>
               )}
             </button>
@@ -512,22 +617,21 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '1.75rem',
                 margin: '0 auto',
                 animation: 'pulse 1.8s infinite ease-in-out',
               }}
             >
-              🌐
+              <GlobeIcon size={28} color="#34d399" />
             </div>
           </div>
           <h3 style={{ fontSize: '1.15rem', fontWeight: 600, color: '#f3f4f6', marginBottom: '0.4rem' }}>
-            Scrapling Stealth Prospecting in Progress
+            Real-Time Web Intelligence in Progress
           </h3>
           <p style={{ color: '#34d399', fontSize: '0.9rem', fontWeight: 500, marginBottom: '0.75rem' }}>
             {searchStep}
           </p>
           <div style={{ fontSize: '0.8rem', color: '#819080' }}>
-            Elapsed: {elapsedSec}s • Scraping live websites via Scrapling Fetcher without paid tokens
+            Elapsed: {elapsedSec}s • Live HTTP crawling of candidate company websites without pre-cached databases
           </div>
         </div>
       )}
@@ -567,9 +671,13 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                   padding: '0.2rem 0.6rem',
                   borderRadius: '6px',
                   fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
                 }}
               >
-                100% Verified Evidence
+                <CheckIcon size={12} color="#34d399" />
+                Live Web Evidence
               </span>
               <span
                 style={{
@@ -580,7 +688,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                   fontWeight: 600,
                 }}
               >
-                Zero Paid API Cost
+                Zero Pre-Loaded Records
               </span>
             </div>
           </div>
@@ -637,11 +745,11 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                             textDecoration: 'none',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '0.25rem',
+                            gap: '0.3rem',
                           }}
                         >
                           <span>{company.domain}</span>
-                          <span>↗</span>
+                          <ExternalLinkIcon size={12} color="#819080" />
                         </a>
                       </div>
 
@@ -680,9 +788,13 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                           background: 'rgba(255, 255, 255, 0.05)',
                           color: '#d1d5db',
                           border: '1px solid var(--border-color)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
                         }}
                       >
-                        🏢 {company.sector}
+                        <BuildingIcon size={12} color="#9ca3af" />
+                        {company.sector}
                       </span>
                       <span
                         style={{
@@ -692,9 +804,13 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                           background: 'rgba(255, 255, 255, 0.05)',
                           color: '#d1d5db',
                           border: '1px solid var(--border-color)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
                         }}
                       >
-                        👥 {company.company_size}
+                        <UsersIcon size={12} color="#9ca3af" />
+                        {company.company_size}
                       </span>
                       <span
                         style={{
@@ -704,9 +820,13 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                           background: 'rgba(255, 255, 255, 0.05)',
                           color: '#d1d5db',
                           border: '1px solid var(--border-color)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
                         }}
                       >
-                        💵 {company.approx_revenue}
+                        <DollarIcon size={12} color="#9ca3af" />
+                        {company.approx_revenue}
                       </span>
                       <span
                         style={{
@@ -716,9 +836,13 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                           background: 'rgba(255, 255, 255, 0.05)',
                           color: '#d1d5db',
                           border: '1px solid var(--border-color)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
                         }}
                       >
-                        📍 {company.region}
+                        <MapPinIcon size={12} color="#9ca3af" />
+                        {company.region}
                       </span>
                     </div>
 
@@ -740,9 +864,13 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                           textTransform: 'uppercase',
                           letterSpacing: '0.03em',
                           marginBottom: '0.2rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
                         }}
                       >
-                        ⚡ Detected Buying Intent
+                        <SignalIcon size={12} color="#fbbf24" />
+                        Detected Buying Intent
                       </div>
                       <div style={{ fontSize: '0.82rem', color: '#f3f4f6', fontWeight: 500 }}>
                         {company.buying_signal}
@@ -770,10 +898,11 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                           marginBottom: '0.3rem',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '0.25rem',
+                          gap: '0.35rem',
                         }}
                       >
-                        <span>🕷️ Scrapling Evidence Excerpt</span>
+                        <DocumentTextIcon size={12} color="#34d399" />
+                        <span>Live Scraped Evidence</span>
                       </div>
                       <div style={{ fontStyle: 'italic' }}>
                         "{company.evidence_excerpt}"
@@ -801,11 +930,12 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '0.35rem',
+                        gap: '0.4rem',
                       }}
                       title="Run full bounded AI research agent on this company"
                     >
-                      <span>🔬</span> Deep Research
+                      <SearchIcon size={13} color="#ffffff" />
+                      Deep Research
                     </button>
 
                     <button
@@ -825,7 +955,17 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                       }}
                       title="Save lead to CRM pipeline"
                     >
-                      <span>{isSaved ? '✓' : '💾'}</span> {isSaved ? 'Saved' : 'Save'}
+                      {isSaved ? (
+                        <>
+                          <CheckIcon size={13} color="#34d399" />
+                          Saved
+                        </>
+                      ) : (
+                        <>
+                          <BookmarkIcon size={13} color="currentColor" />
+                          Save
+                        </>
+                      )}
                     </button>
 
                     <a
@@ -842,7 +982,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                       }}
                       title="Visit company website"
                     >
-                      ↗
+                      <ExternalLinkIcon size={13} color="currentColor" />
                     </a>
                   </div>
                 </div>

@@ -134,7 +134,7 @@ def test_global_prospect_search_success(client):
     data = res.json()
     assert data["total_found"] > 0
     assert len(data["results"]) > 0
-    assert "Scrapling" in data["scraping_engine"]
+    assert "Crawler" in data["scraping_engine"] or "Stealth" in data["scraping_engine"]
     first = data["results"][0]
     assert "company_name" in first
     assert "domain" in first
