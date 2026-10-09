@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { LeadItem, Campaign, CampaignCompanyChat, ChatMessage } from '../../types';
 
 interface CampaignsViewProps {
@@ -268,6 +268,9 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
   const [companyStatusFilter, setCompanyStatusFilter] = useState<'all' | 'waiting' | 'replied' | 'human'>('all');
   const [humanMessageText, setHumanMessageText] = useState('');
 
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const chatMessagesEndRef = useRef<HTMLDivElement>(null);
+
   const [internalCampaigns, setInternalCampaigns] = useState<Campaign[]>([
     {
       id: 'camp-1',
@@ -310,6 +313,24 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
     return initialList;
   };
 
+  // Auto-focus textarea when human mode is active for active company
+  useEffect(() => {
+    if (selectedCampaign && selectedCompanyId) {
+      const currentList = getCompaniesForSelectedCampaign(selectedCampaign);
+      const active = currentList.find((c) => c.companyId === selectedCompanyId);
+      if (active && !active.agentActive) {
+        setTimeout(() => {
+          textareaRef.current?.focus();
+        }, 60);
+      }
+    }
+  }, [selectedCompanyId, campaignChatsStore, selectedCampaign]);
+
+  // Scroll chat messages to bottom on update
+  useEffect(() => {
+    chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [selectedCompanyId, campaignChatsStore]);
+
   const handleSelectCampaign = (camp: Campaign) => {
     setSelectedCampaign(camp);
     const comps = getCompaniesForSelectedCampaign(camp);
@@ -334,7 +355,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
         onToast(
           nextActive
             ? `AI Agent resumed auto-pilot for ${c.companyName}.`
-            : `AI Agent stopped for ${c.companyName}. Human text box activated!`
+            : `AI Agent stopped for ${c.companyName}. Human text box activated below!`
         );
         return {
           ...c,
@@ -348,6 +369,10 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
       ...prev,
       [selectedCampaign.id]: updated,
     }));
+
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 80);
   };
 
   const handleSendHumanMessage = (companyId: string) => {
@@ -368,7 +393,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
         return {
           ...c,
           messages: [...c.messages, newMsg],
-          waitingNote: 'Human message dispatched. Awaiting reply.',
+          waitingNote: 'Human message dispatched. Waiting for response.',
         };
       }
       return c;
@@ -380,37 +405,10 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
     }));
     setHumanMessageText('');
     onToast('Message sent as Human Representative!');
-  };
-
-  const handleSimulateReplyInChat = (companyId: string) => {
-    if (!selectedCampaign) return;
-    const currentList = getCompaniesForSelectedCampaign(selectedCampaign);
-    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    const updated = currentList.map((c) => {
-      if (c.companyId === companyId) {
-        const newMsg: ChatMessage = {
-          id: `msg-prospect-${Date.now()}`,
-          sender: 'prospect',
-          senderName: `${c.companyName} (Prospect Buyer)`,
-          content: `Hi Alex,\n\nThanks for reaching out! We are currently re-evaluating our outbound tools for next quarter. Could you send over a deck and your calendar link for next Tuesday at 2 PM EST?\n\nBest,\n${c.companyName} Team`,
-          timestamp: `Today at ${nowTime}`,
-        };
-        return {
-          ...c,
-          status: 'replied' as const,
-          messages: [...c.messages, newMsg],
-          waitingNote: undefined,
-        };
-      }
-      return c;
-    });
-
-    setCampaignChatsStore((prev) => ({
-      ...prev,
-      [selectedCampaign.id]: updated,
-    }));
-    onToast(`Simulated incoming reply received from prospect!`);
+    setTimeout(() => {
+      chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      textareaRef.current?.focus();
+    }, 50);
   };
 
   const handleCopyDraft = async (lead: LeadItem) => {
@@ -591,9 +589,10 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
             background: '#ffffff',
             boxShadow: '0 8px 25px rgba(23, 34, 29, 0.05)',
             display: 'grid',
-            gridTemplateColumns: '340px 1fr',
-            height: 'calc(88vh - 120px)',
-            minHeight: '620px',
+            gridTemplateColumns: '320px 1fr',
+            height: 'calc(100vh - 185px)',
+            minHeight: '480px',
+            maxHeight: 'calc(100vh - 185px)',
           }}
         >
           {/* LEFT COLUMN: Companies List */}
@@ -604,10 +603,12 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
               display: 'flex',
               flexDirection: 'column',
               height: '100%',
+              minHeight: 0,
+              overflow: 'hidden',
             }}
           >
             {/* Search Box */}
-            <div style={{ padding: '14px', borderBottom: '1px solid #edf1ee' }}>
+            <div style={{ padding: '12px 14px', borderBottom: '1px solid #edf1ee', flexShrink: 0 }}>
               <input
                 type="text"
                 placeholder="Search companies in campaign..."
@@ -694,7 +695,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
             </div>
 
             {/* Scrollable Company Directory */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
+            <div style={{ flex: '1 1 0%', minHeight: 0, overflowY: 'auto', padding: '10px' }}>
               {filteredCompanies.map((c) => {
                 const isSelected = activeCompany?.companyId === c.companyId;
 
@@ -784,30 +785,33 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                 display: 'flex',
                 flexDirection: 'column',
                 height: '100%',
+                minHeight: 0,
+                overflow: 'hidden',
                 background: '#ffffff',
               }}
             >
               {/* Chat Box Header with Agent Auto-Reply Toggle */}
               <div
                 style={{
-                  padding: '16px 22px',
+                  padding: '14px 20px',
                   borderBottom: '1px solid #edf1ee',
                   background: '#f9fbf9',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  flexShrink: 0,
                 }}
               >
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <h3 style={{ fontSize: '17px', fontWeight: 800, margin: 0, color: '#17221d' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0, color: '#17221d' }}>
                       {activeCompany.companyName}
                     </h3>
                     <a
                       href={`https://${activeCompany.domain}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ fontSize: '12px', color: '#215c32', textDecoration: 'none', fontWeight: 600 }}
+                      style={{ fontSize: '11px', color: '#215c32', textDecoration: 'none', fontWeight: 600 }}
                     >
                       {activeCompany.domain} ↗
                     </a>
@@ -820,30 +824,8 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                   </div>
                 </div>
 
-                {/* Agent Control & Demo Buttons */}
+                {/* MANDATORY: Button to Stop Agent from replying / Activate human text box */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  {activeCompany.status === 'waiting' && (
-                    <button
-                      type="button"
-                      onClick={() => handleSimulateReplyInChat(activeCompany.companyId)}
-                      className="btn"
-                      style={{
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        background: '#f0fdf4',
-                        border: '1px solid #86efac',
-                        color: '#166534',
-                        cursor: 'pointer',
-                      }}
-                      title="Simulate receiving a response from this company in demo mode"
-                    >
-                      ⚡ Simulate Prospect Reply
-                    </button>
-                  )}
-
-                  {/* MANDATORY: Button to Stop Agent from replying / Activate human text box */}
                   <button
                     type="button"
                     onClick={() => handleToggleAgentStatus(activeCompany.companyId)}
@@ -851,16 +833,16 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                     style={{
                       fontSize: '12px',
                       fontWeight: 800,
-                      padding: '7px 14px',
-                      borderRadius: '7px',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
                       cursor: 'pointer',
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '6px',
+                      gap: '8px',
                       background: activeCompany.agentActive ? '#fff1f2' : '#f0fdf4',
                       border: activeCompany.agentActive ? '1.5px solid #f43f5e' : '1.5px solid #16a34a',
                       color: activeCompany.agentActive ? '#be123c' : '#15803d',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
                     }}
                     title={
                       activeCompany.agentActive
@@ -886,7 +868,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
               {/* Status Banner */}
               <div
                 style={{
-                  padding: '8px 22px',
+                  padding: '7px 20px',
                   fontSize: '11px',
                   fontWeight: 600,
                   display: 'flex',
@@ -895,6 +877,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                   background: activeCompany.agentActive ? '#f0f9ff' : '#fefce8',
                   borderBottom: '1px solid #edf1ee',
                   color: activeCompany.agentActive ? '#0369a1' : '#a16207',
+                  flexShrink: 0,
                 }}
               >
                 <span>
@@ -913,12 +896,13 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
               {/* Chat Message Stream */}
               <div
                 style={{
-                  flex: 1,
+                  flex: '1 1 0%',
+                  minHeight: 0,
                   overflowY: 'auto',
-                  padding: '20px 24px',
+                  padding: '18px 22px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '16px',
+                  gap: '14px',
                   background: '#fbfcfb',
                 }}
               >
@@ -1014,7 +998,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px',
-                      margin: '10px 0',
+                      margin: '6px 0',
                     }}
                   >
                     <span>⏳</span>
@@ -1024,101 +1008,217 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                     </span>
                   </div>
                 )}
+
+                <div ref={chatMessagesEndRef} />
               </div>
 
-              {/* Chat Input Bar (Activated when Agent is Stopped) */}
+              {/* Chat Input Bar (ALWAYS VISIBLE & PINNED AT BOTTOM) */}
               <div
                 style={{
-                  padding: '16px 22px',
-                  borderTop: '1px solid #edf1ee',
-                  background: '#ffffff',
+                  flexShrink: 0,
+                  borderTop: '2px solid #e2e8f0',
+                  background: activeCompany.agentActive ? '#f8fafc' : '#ffffff',
+                  padding: '12px 20px',
+                  boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.04)',
                 }}
               >
                 {activeCompany.agentActive ? (
-                  /* Locked state when agent is active */
+                  /* State A: Agent is auto-replying - Clear invitation to take over and write */
                   <div
                     style={{
-                      padding: '12px 16px',
-                      borderRadius: '8px',
-                      background: '#f4f7f4',
-                      border: '1px dashed #c9d6cc',
                       display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
+                      flexDirection: 'column',
+                      gap: '8px',
                     }}
                   >
-                    <div style={{ fontSize: '12px', color: '#56665c' }}>
-                      🤖 <strong>AI Agent is handling auto-replies.</strong> To write and send messages as a human, stop the agent.
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleAgentStatus(activeCompany.companyId)}
-                      className="btn btn-outline"
-                      style={{
-                        fontSize: '11px',
-                        fontWeight: 800,
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        background: '#ffffff',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Take Over as Human →
-                    </button>
-                  </div>
-                ) : (
-                  /* Unlocked state: Human representative can type & send */
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                      <label style={{ fontSize: '11px', fontWeight: 800, color: '#92400e' }}>
-                        👤 Human Representative Message Box (Active)
-                      </label>
-                      <span style={{ fontSize: '10px', color: '#68776e' }}>
-                        Press Send to deliver custom outreach directly
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '12px', color: '#0369a1', fontWeight: 800 }}>
+                          🤖 AI Agent Auto-Reply Active
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '10px',
+                            color: '#0369a1',
+                            background: '#e0f2fe',
+                            padding: '2px 8px',
+                            borderRadius: '10px',
+                            fontWeight: 700,
+                          }}
+                        >
+                          Autopilot
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '11px', color: '#64748b' }}>
+                        Stop agent anytime to type and send messages as human
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div
+                      onClick={() => handleToggleAgentStatus(activeCompany.companyId)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '12px 16px',
+                        borderRadius: '8px',
+                        background: '#ffffff',
+                        border: '1.5px dashed #cbd5e1',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '18px' }}>✍️</span>
+                        <div>
+                          <b style={{ fontSize: '13px', color: '#1e293b', display: 'block' }}>
+                            Click to Stop Agent & Activate Human Writing Box
+                          </b>
+                          <span style={{ fontSize: '11px', color: '#64748b' }}>
+                            Pauses AI agent for {activeCompany.companyName} and unlocks the message box.
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleAgentStatus(activeCompany.companyId);
+                        }}
+                        className="btn"
+                        style={{
+                          padding: '7px 14px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          background: '#be123c',
+                          color: '#ffffff',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        <span>🛑</span>
+                        <span>Stop Agent & Write</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* State B: Agent stopped - Human Writing Mode ACTIVE & PROMINENT */
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            background: '#16a34a',
+                          }}
+                        />
+                        <strong style={{ fontSize: '12px', color: '#15803d', fontWeight: 800 }}>
+                          ✍️ Human Representative Message Box (Active)
+                        </strong>
+                        <span
+                          style={{
+                            fontSize: '10px',
+                            color: '#15803d',
+                            background: '#dcfce7',
+                            padding: '2px 8px',
+                            borderRadius: '10px',
+                            fontWeight: 700,
+                          }}
+                        >
+                          Agent Stopped
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '11px', color: '#64748b' }}>
+                        Press <strong>Enter</strong> to send • <strong>Shift+Enter</strong> for newline
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                       <textarea
-                        rows={2}
+                        ref={textareaRef}
+                        id="human-message-input"
+                        rows={3}
                         value={humanMessageText}
                         onChange={(e) => setHumanMessageText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendHumanMessage(activeCompany.companyId);
+                          }
+                        }}
                         placeholder={`Write custom message to ${activeCompany.companyName} as human representative...`}
                         style={{
                           flex: 1,
                           padding: '10px 14px',
                           borderRadius: '8px',
-                          border: '1.5px solid #d97706',
+                          border: '2px solid #16a34a',
                           fontSize: '13px',
+                          lineHeight: '1.5',
                           outline: 'none',
                           fontFamily: 'inherit',
                           resize: 'none',
-                          background: '#fffdfa',
+                          background: '#ffffff',
+                          color: '#0f172a',
+                          boxShadow: '0 0 0 3px rgba(22, 163, 74, 0.1)',
                         }}
                       />
 
-                      <button
-                        type="button"
-                        onClick={() => handleSendHumanMessage(activeCompany.companyId)}
-                        disabled={!humanMessageText.trim()}
-                        className="btn btn-dark"
-                        style={{
-                          padding: '0 20px',
-                          borderRadius: '8px',
-                          fontSize: '12px',
-                          fontWeight: 800,
-                          cursor: !humanMessageText.trim() ? 'not-allowed' : 'pointer',
-                          opacity: !humanMessageText.trim() ? 0.5 : 1,
-                          background: '#243c22',
-                          color: '#b9f36b',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
-                      >
-                        <span>Send</span>
-                        <span>📤</span>
-                      </button>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleSendHumanMessage(activeCompany.companyId)}
+                          disabled={!humanMessageText.trim()}
+                          className="btn btn-dark"
+                          style={{
+                            padding: '9px 18px',
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            fontWeight: 800,
+                            cursor: !humanMessageText.trim() ? 'not-allowed' : 'pointer',
+                            opacity: !humanMessageText.trim() ? 0.45 : 1,
+                            background: '#15803d',
+                            color: '#ffffff',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            boxShadow: '0 2px 6px rgba(21, 128, 61, 0.25)',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          <span>Send</span>
+                          <span>📤</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleToggleAgentStatus(activeCompany.companyId)}
+                          className="btn btn-outline"
+                          style={{
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            padding: '5px 10px',
+                            borderRadius: '6px',
+                            color: '#475569',
+                            background: '#f8fafc',
+                            border: '1px solid #cbd5e1',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                          }}
+                          title="Resume AI autopilot"
+                        >
+                          ▶ Resume Agent
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}

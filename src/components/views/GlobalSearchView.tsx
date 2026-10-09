@@ -990,7 +990,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                 Active Prospect Cadence Queue ({allDraftsList.length} Accounts)
               </h3>
               <div style={{ fontSize: '12px', color: '#68776e' }}>
-                Click "Simulate Reply" to demo incoming prospect interaction
+                Emails dispatched · Awaiting prospect responses
               </div>
             </div>
 
@@ -1108,28 +1108,6 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                       >
                         View Email
                       </button>
-
-                      {!hasReplied && (
-                        <button
-                          type="button"
-                          onClick={() => handleSimulateReply(draft.companyId)}
-                          className="btn"
-                          style={{
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            padding: '5px 10px',
-                            background: '#f0fdf4',
-                            border: '1px solid #86efac',
-                            color: '#166534',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                          }}
-                          title="Simulate receiving an enthusiastic prospect reply in demo mode"
-                        >
-                          <MessageSquareIcon size={11} color="#166534" />
-                          Simulate Reply
-                        </button>
-                      )}
 
                       {!draft.followUpSent && !hasReplied && (
                         <button
