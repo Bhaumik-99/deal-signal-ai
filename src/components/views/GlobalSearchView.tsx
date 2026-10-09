@@ -8,6 +8,21 @@ interface GlobalSearchViewProps {
   onToast: (msg: string) => void;
 }
 
+interface CampaignEmailDraft {
+  companyId: string;
+  companyName: string;
+  domain: string;
+  website: string;
+  targetRole: string;
+  subject: string;
+  body: string;
+  fitScore: number;
+  status: 'sent' | 'replied';
+  replyMessage?: string;
+  sentAt?: string;
+  followUpSent?: boolean;
+}
+
 const SECTOR_OPTIONS = [
   { value: 'b2b_saas', label: 'B2B SaaS & Enterprise Software' },
   { value: 'fintech', label: 'Fintech, Payments & Banking Tech' },
@@ -61,7 +76,14 @@ const ROLE_OPTIONS = [
   { value: 'CFO / VP Finance & Procurement', label: 'CFO / VP Finance & Procurement' },
 ];
 
-// Clean, high-precision SVG icons
+const MAX_OUTPUT_OPTIONS = [
+  { value: 10, label: '10 Accounts (Fast Scout)' },
+  { value: 25, label: '25 Accounts (Recommended)' },
+  { value: 50, label: '50 Accounts (Deep Pipeline)' },
+  { value: 100, label: '100 Accounts (Maximum Capacity)' },
+];
+
+// Clean icons
 const SearchIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = 'currentColor' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="8" />
@@ -98,20 +120,6 @@ const BookmarkIcon: React.FC<{ size?: number; color?: string }> = ({ size = 13, 
   </svg>
 );
 
-const LightningIcon: React.FC<{ size?: number; color?: string }> = ({ size = 12, color = 'currentColor' }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-  </svg>
-);
-
-const TargetIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = 'currentColor' }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" />
-    <circle cx="12" cy="12" r="6" />
-    <circle cx="12" cy="12" r="2" />
-  </svg>
-);
-
 const DownloadIcon: React.FC<{ size?: number; color?: string }> = ({ size = 13, color = 'currentColor' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -120,17 +128,39 @@ const DownloadIcon: React.FC<{ size?: number; color?: string }> = ({ size = 13, 
   </svg>
 );
 
+const SendIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="22" y1="2" x2="11" y2="13" />
+    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+  </svg>
+);
+
+const MailIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+    <polyline points="22,6 12,13 2,6" />
+  </svg>
+);
+
+const MessageSquareIcon: React.FC<{ size?: number; color?: string }> = ({ size = 13, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+);
+
 export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
   onNavigateToDiscover,
   onLeadSaved,
   onToast,
 }) => {
+  // Search parameters
   const [sector, setSector] = useState<string>('b2b_saas');
   const [companySize, setCompanySize] = useState<string>('50-250');
   const [approxRevenue, setApproxRevenue] = useState<string>('$10M-$50M');
   const [region, setRegion] = useState<string>('North America (US & Canada)');
   const [buyingSignal, setBuyingSignal] = useState<string>('Rapid Engineering & Product Hiring');
   const [targetRole, setTargetRole] = useState<string>('VP / Head of Sales & Revenue Operations');
+  const [maxResults, setMaxResults] = useState<number>(25);
 
   const [loading, setLoading] = useState<boolean>(false);
   const [searchStep, setSearchStep] = useState<string>('');
@@ -139,19 +169,30 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
   const [searchResult, setSearchResult] = useState<GlobalSearchResponse | null>(null);
   const [savedLeadIds, setSavedLeadIds] = useState<Set<string>>(new Set());
 
+  // Campaign State
+  const [campaignDrafts, setCampaignDrafts] = useState<Record<string, CampaignEmailDraft>>({});
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState<boolean>(false);
+  const [selectedReviewCompId, setSelectedReviewCompId] = useState<string | null>(null);
+  const [reviewSearchQuery, setReviewSearchQuery] = useState<string>('');
+  const [campaignPhase, setCampaignPhase] = useState<'idle' | 'sending' | 'active'>('idle');
+  const [dispatchProgress, setDispatchProgress] = useState<number>(0);
+  const [dispatchCompany, setDispatchCompany] = useState<string>('');
+  const [viewDetailDraft, setViewDetailDraft] = useState<CampaignEmailDraft | null>(null);
+
   const isFormValid =
     Boolean(sector) &&
     Boolean(companySize) &&
     Boolean(approxRevenue) &&
     Boolean(region) &&
     Boolean(buyingSignal) &&
-    Boolean(targetRole);
+    Boolean(targetRole) &&
+    Boolean(maxResults);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!isFormValid) {
-      setError('Please select valid options for all 6 prospecting parameters.');
+      setError('Please select valid options for all prospecting parameters.');
       return;
     }
 
@@ -159,6 +200,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
     setLoading(true);
     setElapsedSec(0);
     setSearchResult(null);
+    setCampaignPhase('idle');
 
     const timer = setInterval(() => {
       setElapsedSec((s) => s + 1);
@@ -170,7 +212,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
       'Performing live HTTP extraction of company sites...',
       'Parsing career listings, leadership announcements & growth signals...',
       'Computing ICP fit scores and extracting evidence quotes...',
-      'Finalizing account dossier and citation records...',
+      'Finalizing account dossiers and citation records...',
     ];
 
     let stepIdx = 0;
@@ -187,11 +229,32 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
       region,
       buying_signal: buyingSignal,
       target_role: targetRole,
+      max_results: maxResults,
     };
 
     try {
       const response = await searchGlobalProspects(criteria);
       setSearchResult(response);
+
+      // Pre-generate consultative personalized email drafts for all discovered companies
+      const draftsMap: Record<string, CampaignEmailDraft> = {};
+      response.results.forEach((c) => {
+        draftsMap[c.id] = {
+          companyId: c.id,
+          companyName: c.company_name,
+          domain: c.domain,
+          website: c.website,
+          targetRole: c.target_role,
+          fitScore: c.fit_score,
+          subject: `Thought on ${c.company_name}'s commercial expansion`,
+          body: `Hi ${c.company_name} team,\n\nI was reviewing ${c.company_name}'s recent commercial momentum and customer solutions in ${c.sector}.\n\nWhen scaling go-to-market systems across ${c.region}, identifying verified prospect accounts with real intent triggers—without manual research overhead—becomes a major competitive advantage.\n\nDealSignal AI equips revenue teams with verified buying signals and customer context before outbound contact. Would a 15-minute conversation next week be helpful to discuss whether this aligns with ${c.company_name}'s outbound priorities?\n\nBest regards,\nOutbound Growth Team\nDealSignal AI`,
+          status: 'sent',
+          sentAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+      });
+
+      setCampaignDrafts(draftsMap);
+      setSelectedReviewCompId(response.results[0]?.id || null);
       onToast(`Discovered ${response.total_found} accounts in ${(response.duration_ms / 1000).toFixed(1)}s`);
     } catch (err: any) {
       setError(err.message || 'Live web search failed. Please try again.');
@@ -238,7 +301,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
       'Target Role',
       'Buying Signal',
       'Evidence Excerpt',
-      'Scraped Timestamp'
+      'Scraped Timestamp',
     ];
 
     const escapeCsv = (str: string | number | undefined | null) => {
@@ -259,76 +322,151 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
       escapeCsv(c.target_role),
       escapeCsv(c.buying_signal),
       escapeCsv(c.evidence_excerpt),
-      escapeCsv(c.scraped_timestamp)
+      escapeCsv(c.scraped_timestamp),
     ]);
 
-    const csvContent = [headers.map((h) => `"${h}"`).join(','), ...rows.map((r) => r.join(','))].join('\r\n');
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `dealsignal_scouted_accounts_${Date.now()}.csv`);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `discovered_prospects_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-
-    onToast(`Downloaded ${searchResult.results.length} scouted accounts as CSV.`);
+    onToast('Exported prospect list as CSV');
   };
 
-  return (
-    <div className="view-container" style={{ maxWidth: '1240px', margin: '0 auto', paddingBottom: '3rem' }}>
-      {/* Page Header (Consistent with Overview/Leads in DealSignal) */}
-      <div className="page-header" style={{ marginBottom: '22px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <span className="pill pill-high" style={{ fontSize: '11px', fontWeight: 700 }}>
-              Live Market Scout
-            </span>
-            <span style={{ fontSize: '12px', color: '#68776e', fontWeight: 500 }}>
-              Real-Time Web Intelligence
-            </span>
-          </div>
+  // Launch Campaign Flow
+  const handleOpenReviewModal = () => {
+    if (!searchResult || searchResult.results.length === 0) return;
+    setIsReviewModalOpen(true);
+  };
 
-          <h1 style={{ color: '#17221d', letterSpacing: '-1.2px' }}>
-            Global Account Scout
-          </h1>
-          <p style={{ maxWidth: '640px', fontSize: '13px', color: '#64736a' }}>
-            Search and scrape the live internet for accounts that strictly match your target profile.
-            Every search performs live web extraction on demand with zero static databases.
-          </p>
+  const handleUpdateDraft = (companyId: string, field: 'subject' | 'body', value: string) => {
+    setCampaignDrafts((prev) => ({
+      ...prev,
+      [companyId]: {
+        ...prev[companyId],
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleConfirmAndLaunchCampaign = async () => {
+    setIsReviewModalOpen(false);
+    setCampaignPhase('sending');
+    setDispatchProgress(0);
+
+    const companies = searchResult?.results || [];
+    const total = companies.length;
+
+    for (let i = 0; i < total; i++) {
+      const c = companies[i];
+      setDispatchCompany(c.company_name);
+      setDispatchProgress(Math.round(((i + 1) / total) * 100));
+      // Fast smooth animated dispatch feedback
+      await new Promise((r) => setTimeout(r, Math.max(25, Math.min(100, 1400 / total))));
+    }
+
+    setCampaignPhase('active');
+    onToast(`Campaign launched: ${total} outreach emails sent. Waiting for responses.`);
+  };
+
+  const handleSimulateReply = (companyId: string) => {
+    const draft = campaignDrafts[companyId];
+    if (!draft) return;
+
+    setCampaignDrafts((prev) => ({
+      ...prev,
+      [companyId]: {
+        ...prev[companyId],
+        status: 'replied',
+        replyMessage: `Hi Alex,\n\nThanks for reaching out! We are currently scaling our commercial stack this quarter. Would love to review a deck or schedule a quick 15-minute call next Tuesday at 2 PM EST.\n\nBest,\n${draft.companyName} Team`,
+      },
+    }));
+
+    onToast(`New prospect reply logged from ${draft.companyName}!`);
+  };
+
+  const handleSendFollowUp = (companyId: string) => {
+    const draft = campaignDrafts[companyId];
+    if (!draft) return;
+
+    setCampaignDrafts((prev) => ({
+      ...prev,
+      [companyId]: {
+        ...prev[companyId],
+        followUpSent: true,
+      },
+    }));
+
+    onToast(`Follow-up #1 dispatched to ${draft.companyName} (Demo)`);
+  };
+
+  const allDraftsList = searchResult ? searchResult.results.map((c) => campaignDrafts[c.id]).filter(Boolean) : [];
+  const filteredReviewList = allDraftsList.filter((d) =>
+    reviewSearchQuery ? d.companyName.toLowerCase().includes(reviewSearchQuery.toLowerCase()) : true
+  );
+  const activeSelectedDraft = selectedReviewCompId ? campaignDrafts[selectedReviewCompId] : allDraftsList[0];
+
+  const totalSent = allDraftsList.length;
+  const totalReplies = allDraftsList.filter((d) => d.status === 'replied').length;
+  const totalWaiting = totalSent - totalReplies;
+
+  return (
+    <div style={{ maxWidth: '1280px', margin: '0 auto', paddingBottom: '70px' }}>
+      {/* View Header */}
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+          <span
+            style={{
+              display: 'inline-block',
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              background: '#243c22',
+            }}
+          />
+          <span
+            style={{
+              fontSize: '11px',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              color: '#243c22',
+            }}
+          >
+            Live Web Prospector & Multi-Account Cadence
+          </span>
         </div>
+        <h1 style={{ fontSize: '26px', fontWeight: 800, color: '#17221d', letterSpacing: '-0.02em', margin: '0 0 6px 0' }}>
+          Global Real-Time Account Discovery
+        </h1>
+        <p style={{ fontSize: '13px', color: '#56665c', margin: 0, maxWidth: '820px', lineHeight: 1.5 }}>
+          Search the live internet for verified enterprise accounts matching your precise ICP parameters.
+          Set search volume up to 100 output accounts and launch complete automated outbound cadences.
+        </p>
       </div>
 
-      {/* ICP Parameters Panel */}
+      {/* SEARCH FORM PANEL */}
       <div
         className="panel"
         style={{
-          padding: '24px',
-          borderRadius: '14px',
           background: '#ffffff',
-          border: '1px solid #e1e7e2',
-          boxShadow: '0 8px 24px rgba(23, 34, 29, 0.04)',
-          marginBottom: '26px',
+          borderRadius: '12px',
+          padding: '24px',
+          border: '1px solid #dbe3dc',
+          boxShadow: '0 4px 18px rgba(23, 34, 29, 0.04)',
+          marginBottom: '24px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <TargetIcon size={16} color="#243c22" />
-            <span style={{ fontSize: '14px', fontWeight: 700, color: '#17221d' }}>
-              Target Qualification Criteria
-            </span>
-          </div>
-          <span style={{ fontSize: '11px', color: '#7c8b81', fontWeight: 600 }}>
-            All 6 Parameters Required
-          </span>
-        </div>
-
         <form onSubmit={handleSearch}>
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
               gap: '14px',
             }}
           >
@@ -451,7 +589,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
             {/* 5. Buying Signal */}
             <div>
               <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#27382d', marginBottom: '6px' }}>
-                Buying Intent Trigger <span style={{ color: '#dc2626' }}>*</span>
+                Intent & Buying Trigger <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <select
                 className="input-select"
@@ -505,6 +643,35 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                 ))}
               </select>
             </div>
+
+            {/* 7. Search Output Limit (Up to 100) */}
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#27382d', marginBottom: '6px' }}>
+                Search Output Limit (Max 100) <span style={{ color: '#dc2626' }}>*</span>
+              </label>
+              <select
+                className="input-select"
+                value={maxResults}
+                onChange={(e) => setMaxResults(Number(e.target.value))}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  background: '#f2f8f3',
+                  color: '#17221d',
+                  border: '1.5px solid #243c22',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  outline: 'none',
+                }}
+              >
+                {MAX_OUTPUT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {error && (
@@ -535,7 +702,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
             }}
           >
             <div style={{ fontSize: '12px', color: '#7c8a81' }}>
-              Queries live web sources in real time • Direct homepage extraction
+              Queries live web sources in real time • Output up to 100 verified company websites
             </div>
 
             <button
@@ -558,7 +725,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
               ) : (
                 <>
                   <SearchIcon size={14} color="#ffffff" />
-                  Discover Accounts
+                  Discover Accounts (Max {maxResults})
                 </>
               )}
             </button>
@@ -606,10 +773,317 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
         </div>
       )}
 
-      {/* Results Section */}
-      {searchResult && (
+      {/* SENDING SIMULATION OVERLAY */}
+      {campaignPhase === 'sending' && (
+        <div
+          className="panel"
+          style={{
+            padding: '28px',
+            borderRadius: '12px',
+            background: '#ffffff',
+            border: '2px solid #243c22',
+            marginBottom: '26px',
+            boxShadow: '0 8px 30px rgba(36, 60, 34, 0.12)',
+            textAlign: 'center',
+          }}
+        >
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', background: '#243c22', color: '#b9f36b', marginBottom: '14px' }}>
+            <SendIcon size={22} color="#b9f36b" />
+          </div>
+          <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#17221d', margin: '0 0 6px 0' }}>
+            Dispatching Campaign Outreach Emails...
+          </h3>
+          <p style={{ fontSize: '13px', color: '#56665c', margin: '0 0 18px 0' }}>
+            Delivering personalized message to <strong>{dispatchCompany}</strong> ({dispatchProgress}%)
+          </p>
+
+          <div style={{ width: '100%', maxWidth: '480px', height: '8px', background: '#e5ece6', borderRadius: '999px', margin: '0 auto', overflow: 'hidden' }}>
+            <div
+              style={{
+                height: '100%',
+                width: `${dispatchProgress}%`,
+                background: '#243c22',
+                transition: 'width 0.15s ease',
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ACTIVE CAMPAIGN DASHBOARD */}
+      {campaignPhase === 'active' && searchResult && (
+        <div style={{ marginBottom: '32px' }}>
+          {/* Header Banner */}
+          <div
+            style={{
+              padding: '20px 24px',
+              borderRadius: '12px',
+              background: '#243c22',
+              color: '#ffffff',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              boxShadow: '0 6px 24px rgba(36, 60, 34, 0.15)',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                <span
+                  style={{
+                    background: '#b9f36b',
+                    color: '#17221d',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    padding: '3px 8px',
+                    borderRadius: '5px',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  🟢 Campaign Active • Emails Dispatched
+                </span>
+                <span style={{ fontSize: '12px', color: '#d2e3d5' }}>
+                  Demo Mode • Cadence Monitoring
+                </span>
+              </div>
+              <h2 style={{ fontSize: '20px', fontWeight: 800, margin: '0 0 4px 0', letterSpacing: '-0.02em', color: '#ffffff' }}>
+                Outbound Sequence Active for {totalSent} Accounts
+              </h2>
+              <div style={{ fontSize: '12px', color: '#b9cfbe' }}>
+                Initial outreach emails sent. Automatically awaiting prospect responses & follow-up triggers.
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setCampaignPhase('idle')}
+                className="btn"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  padding: '8px 14px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                }}
+              >
+                ← Return to Search Results
+              </button>
+            </div>
+          </div>
+
+          {/* 4 KPI Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '22px' }}>
+            <div className="panel" style={{ padding: '16px 20px', borderRadius: '10px', background: '#ffffff', border: '1px solid #dbe3dc' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#68776e', textTransform: 'uppercase' }}>Emails Dispatched</div>
+              <div style={{ fontSize: '26px', fontWeight: 800, color: '#17221d', marginTop: '4px' }}>{totalSent}</div>
+              <div style={{ fontSize: '11px', color: '#243c22', fontWeight: 600, marginTop: '2px' }}>100% Delivered</div>
+            </div>
+
+            <div className="panel" style={{ padding: '16px 20px', borderRadius: '10px', background: '#ffffff', border: '1px solid #dbe3dc' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#68776e', textTransform: 'uppercase' }}>Waiting for Follow-up</div>
+              <div style={{ fontSize: '26px', fontWeight: 800, color: '#b45309', marginTop: '4px' }}>{totalWaiting}</div>
+              <div style={{ fontSize: '11px', color: '#78716c', fontWeight: 600, marginTop: '2px' }}>In follow-up cadence</div>
+            </div>
+
+            <div className="panel" style={{ padding: '16px 20px', borderRadius: '10px', background: '#ffffff', border: '1px solid #dbe3dc' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#68776e', textTransform: 'uppercase' }}>Responses Received</div>
+              <div style={{ fontSize: '26px', fontWeight: 800, color: '#15803d', marginTop: '4px' }}>{totalReplies}</div>
+              <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 600, marginTop: '2px' }}>Interested prospects</div>
+            </div>
+
+            <div className="panel" style={{ padding: '16px 20px', borderRadius: '10px', background: '#ffffff', border: '1px solid #dbe3dc' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#68776e', textTransform: 'uppercase' }}>Next Touchpoint</div>
+              <div style={{ fontSize: '16px', fontWeight: 800, color: '#17221d', marginTop: '10px' }}>In 3 business days</div>
+              <div style={{ fontSize: '11px', color: '#68776e', fontWeight: 600, marginTop: '2px' }}>Follow-up #1 scheduled</div>
+            </div>
+          </div>
+
+          {/* Account Cadence List */}
+          <div className="panel" style={{ padding: '20px', borderRadius: '12px', background: '#ffffff', border: '1px solid #dbe3dc' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#17221d', margin: 0 }}>
+                Active Prospect Cadence Queue ({allDraftsList.length} Accounts)
+              </h3>
+              <div style={{ fontSize: '12px', color: '#68776e' }}>
+                Click "Simulate Reply" to test prospect engagement demo
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {allDraftsList.map((draft) => {
+                const hasReplied = draft.status === 'replied';
+
+                return (
+                  <div
+                    key={draft.companyId}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '14px 18px',
+                      borderRadius: '9px',
+                      border: '1px solid #edf1ee',
+                      background: hasReplied ? '#f3faf4' : '#fafcfa',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0 }}>
+                      <span
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '8px',
+                          background: hasReplied ? '#243c22' : '#e5ece6',
+                          color: hasReplied ? '#b9f36b' : '#27382d',
+                          fontWeight: 800,
+                          fontSize: '13px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {draft.companyName[0]?.toUpperCase() || 'C'}
+                      </span>
+
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '14px', fontWeight: 700, color: '#17221d' }}>
+                            {draft.companyName}
+                          </span>
+                          <span style={{ fontSize: '12px', color: '#68776e' }}>({draft.domain})</span>
+                          <span className="pill pill-high" style={{ fontSize: '9px', padding: '1px 6px' }}>
+                            Fit: {draft.fitScore}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#56665c', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          Target: <strong>{draft.targetRole}</strong> • Subject: <em>{draft.subject}</em>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Status & Actions */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                      {hasReplied ? (
+                        <span
+                          style={{
+                            background: '#dcfce7',
+                            color: '#15803d',
+                            border: '1px solid #bbf7d0',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: '4px 9px',
+                            borderRadius: '6px',
+                          }}
+                        >
+                          ✓ Replied • Interested
+                        </span>
+                      ) : (
+                        <span
+                          style={{
+                            background: '#fef3c7',
+                            color: '#92400e',
+                            border: '1px solid #fde68a',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: '4px 9px',
+                            borderRadius: '6px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: '6px',
+                              height: '6px',
+                              borderRadius: '50%',
+                              background: '#b45309',
+                              display: 'inline-block',
+                            }}
+                          />
+                          Sent • Waiting for follow-up
+                        </span>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => setViewDetailDraft(draft)}
+                        className="btn"
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          padding: '5px 10px',
+                          background: '#ffffff',
+                          border: '1px solid #d3ded6',
+                          color: '#17221d',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        View Email
+                      </button>
+
+                      {!hasReplied && (
+                        <button
+                          type="button"
+                          onClick={() => handleSimulateReply(draft.companyId)}
+                          className="btn"
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: '5px 10px',
+                            background: '#f0fdf4',
+                            border: '1px solid #86efac',
+                            color: '#166534',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                          }}
+                          title="Simulate receiving an enthusiastic prospect reply in demo mode"
+                        >
+                          <MessageSquareIcon size={11} color="#166534" />
+                          Simulate Reply
+                        </button>
+                      )}
+
+                      {!draft.followUpSent && !hasReplied && (
+                        <button
+                          type="button"
+                          onClick={() => handleSendFollowUp(draft.companyId)}
+                          className="btn"
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            padding: '5px 10px',
+                            background: '#ffffff',
+                            border: '1px solid #d3ded6',
+                            color: '#56665c',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                          }}
+                          title="Manually trigger Follow-up #1 now (Demo)"
+                        >
+                          Send Follow-up (Demo)
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RESULTS LIST (When not in active campaign dashboard) */}
+      {searchResult && campaignPhase === 'idle' && (
         <div>
-          {/* HIGH-CONTRAST RESULTS RIBBON ("6 Accounts Identified") */}
+          {/* HIGH-CONTRAST RESULTS RIBBON WITH PRIMARY CTA BUTTON TO START CAMPAIGN FOR ALL */}
           <div
             style={{
               display: 'flex',
@@ -653,6 +1127,31 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {/* PRIMARY CTA: START CAMPAIGN FOR ALL */}
+              <button
+                type="button"
+                onClick={handleOpenReviewModal}
+                className="btn btn-dark"
+                style={{
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  padding: '8px 16px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '7px',
+                  background: '#243c22',
+                  color: '#b9f36b',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 10px rgba(36, 60, 34, 0.25)',
+                }}
+                title="Start outbound campaign for all discovered accounts"
+              >
+                <SendIcon size={14} color="#b9f36b" />
+                <span>Start Campaign for All ({searchResult.total_found} Accounts)</span>
+              </button>
+
               <button
                 type="button"
                 onClick={handleDownloadCsv}
@@ -660,7 +1159,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                 style={{
                   fontSize: '12px',
                   fontWeight: 700,
-                  padding: '6px 12px',
+                  padding: '7px 12px',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
@@ -669,24 +1168,13 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                   border: '1px solid #c8d6cb',
                   borderRadius: '7px',
                   cursor: 'pointer',
-                  transition: 'all 0.15s ease'
+                  transition: 'all 0.15s ease',
                 }}
                 title="Download CSV export of all live scraped accounts"
               >
                 <DownloadIcon size={13} color="#17221d" />
                 <span>Download CSV</span>
               </button>
-
-              <span
-                className="pill pill-high"
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  padding: '4px 10px',
-                }}
-              >
-                Ranked by ICP Fit Score
-              </span>
             </div>
           </div>
 
@@ -710,7 +1198,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
-                    animationDelay: `${idx * 60}ms`,
+                    animationDelay: `${idx * 40}ms`,
                     boxShadow: '0 6px 20px rgba(23, 34, 29, 0.05)',
                   }}
                 >
@@ -721,177 +1209,129 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                         display: 'flex',
                         alignItems: 'flex-start',
                         justifyContent: 'space-between',
-                        marginBottom: '14px',
+                        marginBottom: '10px',
+                        gap: '8px',
                       }}
                     >
                       <div>
-                        <h3
-                          style={{
-                            fontSize: '17px',
-                            fontWeight: 800,
-                            color: '#17221d',
-                            margin: '0 0 3px 0',
-                            letterSpacing: '-0.02em',
-                          }}
-                        >
-                          {company.company_name}
-                        </h3>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                          <span
+                            style={{
+                              width: '26px',
+                              height: '26px',
+                              borderRadius: '6px',
+                              background: '#243c22',
+                              color: '#ffffff',
+                              fontWeight: 800,
+                              fontSize: '12px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            {company.company_name[0]?.toUpperCase() || 'C'}
+                          </span>
+                          <h3
+                            style={{
+                              fontSize: '16px',
+                              fontWeight: 800,
+                              color: '#17221d',
+                              margin: 0,
+                              letterSpacing: '-0.01em',
+                            }}
+                          >
+                            {company.company_name}
+                          </h3>
+                        </div>
+
                         <a
                           href={company.website}
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{
-                            fontSize: '12px',
+                            fontSize: '11px',
                             color: '#215c32',
                             textDecoration: 'none',
+                            fontWeight: 600,
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: '4px',
-                            fontWeight: 600,
-                          }}
-                        >
-                          <span>{company.domain}</span>
-                          <ExternalLinkIcon size={12} color="#215c32" />
-                        </a>
-                      </div>
-
-                      <div
-                        style={{
-                          textAlign: 'center',
-                          padding: '4px 10px',
-                          borderRadius: '8px',
-                          background: company.fit_score >= 80 ? '#edf7e6' : '#fff8ea',
-                          border: company.fit_score >= 80 ? '1px solid #c8e4ba' : '1px solid #fae1ad',
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: '17px',
-                            fontWeight: 800,
-                            color: company.fit_score >= 80 ? '#23521e' : '#8a5300',
-                            lineHeight: 1,
-                          }}
-                        >
-                          {company.fit_score}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: '9px',
-                            color: company.fit_score >= 80 ? '#23521e' : '#8a5300',
-                            fontWeight: 800,
-                            textTransform: 'uppercase',
                             marginTop: '2px',
                           }}
                         >
-                          Fit Score
-                        </div>
+                          <span>{company.domain}</span>
+                          <ExternalLinkIcon size={11} color="#215c32" />
+                        </a>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                        <span
+                          className="pill pill-high"
+                          style={{
+                            fontSize: '12px',
+                            fontWeight: 800,
+                            padding: '3px 8px',
+                          }}
+                        >
+                          ICP {company.fit_score}
+                        </span>
+                        <span className="pill pill-medium" style={{ fontSize: '9px', padding: '1px 6px' }}>
+                          Live Crawled
+                        </span>
                       </div>
                     </div>
 
-                    {/* Metadata Parameter Chips */}
+                    {/* Metadata tags */}
                     <div
                       style={{
                         display: 'flex',
                         flexWrap: 'wrap',
-                        gap: '6px',
-                        marginBottom: '14px',
+                        gap: '5px',
+                        marginBottom: '12px',
                       }}
                     >
-                      <span
-                        style={{
-                          fontSize: '11px',
-                          padding: '3px 8px',
-                          borderRadius: '5px',
-                          background: '#f2f6f2',
-                          color: '#26372c',
-                          border: '1px solid #dbe5dc',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {company.sector}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: '11px',
-                          padding: '3px 8px',
-                          borderRadius: '5px',
-                          background: '#f2f6f2',
-                          color: '#26372c',
-                          border: '1px solid #dbe5dc',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {company.company_size}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: '11px',
-                          padding: '3px 8px',
-                          borderRadius: '5px',
-                          background: '#f2f6f2',
-                          color: '#26372c',
-                          border: '1px solid #dbe5dc',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {company.approx_revenue}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: '11px',
-                          padding: '3px 8px',
-                          borderRadius: '5px',
-                          background: '#f2f6f2',
-                          color: '#26372c',
-                          border: '1px solid #dbe5dc',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {company.region}
-                      </span>
+                      <span className="scout-tag">{company.sector}</span>
+                      <span className="scout-tag">{company.company_size}</span>
+                      <span className="scout-tag">{company.approx_revenue}</span>
+                      <span className="scout-tag">{company.region}</span>
                     </div>
 
-                    {/* Detected Intent Signal Box */}
+                    {/* Target Persona */}
                     <div
                       style={{
+                        fontSize: '11px',
+                        color: '#495950',
+                        marginBottom: '10px',
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        background: '#f2f6f3',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <span style={{ fontWeight: 700, color: '#17221d' }}>Target Role:</span>
+                      <span>{company.target_role}</span>
+                    </div>
+
+                    {/* Live Scraped Evidence Snippet */}
+                    <div
+                      style={{
+                        marginBottom: '16px',
                         padding: '10px 12px',
                         borderRadius: '8px',
-                        background: '#fef9ee',
-                        border: '1px solid #f6dfad',
-                        marginBottom: '14px',
+                        background: '#f8faf8',
+                        border: '1px solid #e1ebe2',
                       }}
                     >
                       <div
                         style={{
                           fontSize: '10px',
                           fontWeight: 800,
-                          color: '#92400e',
                           textTransform: 'uppercase',
+                          color: '#243c22',
                           letterSpacing: '0.04em',
-                          marginBottom: '3px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                        }}
-                      >
-                        <LightningIcon size={12} color="#92400e" />
-                        Detected Intent Trigger
-                      </div>
-                      <div style={{ fontSize: '13px', color: '#78350f', fontWeight: 600 }}>
-                        {company.buying_signal}
-                      </div>
-                    </div>
-
-                    {/* LIVE SCRAPED EVIDENCE BOX (HIGH CONTRAST & READABLE TEXT) */}
-                    <div className="scout-evidence-box" style={{ marginBottom: '16px' }}>
-                      <div
-                        style={{
-                          fontSize: '10px',
-                          color: '#1b5e20',
-                          fontWeight: 800,
-                          letterSpacing: '0.04em',
-                          textTransform: 'uppercase',
-                          marginBottom: '5px',
+                          marginBottom: '4px',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '5px',
@@ -935,7 +1375,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                       Deep Research
                     </button>
 
-                    {/* 2. SAVE LEAD BUTTON (HIGH CONTRAST & CLEAR STATE) */}
+                    {/* 2. SAVE LEAD BUTTON */}
                     <button
                       onClick={() => handleSaveToLeads(company)}
                       disabled={isSaved}
@@ -992,6 +1432,399 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRMATION & EMAIL EDIT REVIEW MODAL */}
+      {isReviewModalOpen && searchResult && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            background: 'rgba(23, 34, 29, 0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div
+            className="panel"
+            style={{
+              width: '100%',
+              maxWidth: '960px',
+              maxHeight: '90vh',
+              background: '#ffffff',
+              borderRadius: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 20px 50px rgba(23, 34, 29, 0.25)',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: '20px 24px',
+                borderBottom: '1px solid #dbe3dc',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: '#f9fbf9',
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#17221d', margin: 0 }}>
+                    Review & Confirm Outbound Campaign
+                  </h2>
+                  <span className="pill pill-high" style={{ fontSize: '11px', padding: '2px 8px' }}>
+                    {searchResult.total_found} Accounts Targeted
+                  </span>
+                </div>
+                <p style={{ fontSize: '12px', color: '#56665c', margin: '4px 0 0 0' }}>
+                  Review and customize outreach emails for all discovered accounts before starting the cadence.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsReviewModalOpen(false)}
+                className="btn"
+                style={{
+                  fontSize: '18px',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#68776e',
+                  cursor: 'pointer',
+                  padding: '4px 8px',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Two-Pane Content */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '320px 1fr',
+                flex: 1,
+                minHeight: '440px',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Left Pane: Account List & Search */}
+              <div
+                style={{
+                  borderRight: '1px solid #dbe3dc',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  background: '#fafcfa',
+                }}
+              >
+                <div style={{ padding: '12px', borderBottom: '1px solid #edf1ee' }}>
+                  <input
+                    type="text"
+                    placeholder="Search accounts..."
+                    value={reviewSearchQuery}
+                    onChange={(e) => setReviewSearchQuery(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid #d3ded6',
+                      fontSize: '12px',
+                      background: '#ffffff',
+                    }}
+                  />
+                </div>
+
+                <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+                  {filteredReviewList.map((draft) => {
+                    const isSelected = activeSelectedDraft?.companyId === draft.companyId;
+
+                    return (
+                      <div
+                        key={draft.companyId}
+                        onClick={() => setSelectedReviewCompId(draft.companyId)}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          background: isSelected ? '#eef6f0' : 'transparent',
+                          border: isSelected ? '1px solid #243c22' : '1px solid transparent',
+                          marginBottom: '4px',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: '13px', fontWeight: 700, color: '#17221d' }}>
+                            {draft.companyName}
+                          </span>
+                          <span className="pill pill-high" style={{ fontSize: '9px', padding: '1px 5px' }}>
+                            Fit {draft.fitScore}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#68776e', marginTop: '2px' }}>
+                          {draft.domain} • {draft.targetRole.split('/')[0]}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Right Pane: Email Editor */}
+              {activeSelectedDraft && (
+                <div
+                  style={{
+                    padding: '24px',
+                    overflowY: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingBottom: '12px',
+                      borderBottom: '1px solid #edf1ee',
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: '16px', fontWeight: 800, color: '#17221d' }}>
+                        Outreach Email for {activeSelectedDraft.companyName}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#68776e' }}>
+                        To: Buyer Persona ({activeSelectedDraft.targetRole})
+                      </div>
+                    </div>
+
+                    <a
+                      href={activeSelectedDraft.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: '11px', color: '#215c32', textDecoration: 'none', fontWeight: 600 }}
+                    >
+                      Visit {activeSelectedDraft.domain} ↗
+                    </a>
+                  </div>
+
+                  {/* Subject Line */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#27382d', marginBottom: '6px' }}>
+                      Subject Line
+                    </label>
+                    <input
+                      type="text"
+                      value={activeSelectedDraft.subject}
+                      onChange={(e) => handleUpdateDraft(activeSelectedDraft.companyId, 'subject', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid #d3ded6',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        color: '#17221d',
+                      }}
+                    />
+                  </div>
+
+                  {/* Body Editor */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#27382d', marginBottom: '6px' }}>
+                      Email Body (Editable)
+                    </label>
+                    <textarea
+                      rows={10}
+                      value={activeSelectedDraft.body}
+                      onChange={(e) => handleUpdateDraft(activeSelectedDraft.companyId, 'body', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        borderRadius: '8px',
+                        border: '1px solid #d3ded6',
+                        fontSize: '13px',
+                        lineHeight: 1.6,
+                        color: '#17221d',
+                        fontFamily: 'inherit',
+                        resize: 'vertical',
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div
+              style={{
+                padding: '16px 24px',
+                borderTop: '1px solid #dbe3dc',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: '#f9fbf9',
+              }}
+            >
+              <div style={{ fontSize: '12px', color: '#68776e' }}>
+                All {searchResult.total_found} emails will be queued for demo delivery
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsReviewModalOpen(false)}
+                  className="btn"
+                  style={{
+                    padding: '9px 16px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    borderRadius: '8px',
+                    border: '1px solid #d3ded6',
+                    background: '#ffffff',
+                    color: '#17221d',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleConfirmAndLaunchCampaign}
+                  className="btn btn-dark"
+                  style={{
+                    padding: '9px 20px',
+                    fontSize: '13px',
+                    fontWeight: 800,
+                    borderRadius: '8px',
+                    background: '#243c22',
+                    color: '#b9f36b',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '7px',
+                  }}
+                >
+                  <SendIcon size={14} color="#b9f36b" />
+                  <span>Confirm & Launch Demo Campaign ({searchResult.total_found} Emails)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW SENT EMAIL MODAL */}
+      {viewDetailDraft && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1100,
+            background: 'rgba(23, 34, 29, 0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div
+            className="panel"
+            style={{
+              width: '100%',
+              maxWidth: '640px',
+              background: '#ffffff',
+              borderRadius: '14px',
+              padding: '24px',
+              boxShadow: '0 20px 45px rgba(23, 34, 29, 0.25)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', borderBottom: '1px solid #edf1ee', paddingBottom: '10px' }}>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0, color: '#17221d' }}>
+                  Sent Outreach to {viewDetailDraft.companyName}
+                </h3>
+                <span style={{ fontSize: '11px', color: '#68776e' }}>
+                  Delivered at {viewDetailDraft.sentAt} • Target: {viewDetailDraft.targetRole}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewDetailDraft(null)}
+                style={{ background: 'transparent', border: 'none', fontSize: '16px', cursor: 'pointer', color: '#68776e' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '14px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#68776e' }}>SUBJECT</div>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#17221d', marginTop: '2px' }}>
+                {viewDetailDraft.subject}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#68776e', marginBottom: '4px' }}>MESSAGE</div>
+              <div
+                style={{
+                  padding: '14px',
+                  borderRadius: '8px',
+                  background: '#f8faf8',
+                  border: '1px solid #e2ebe4',
+                  fontSize: '12px',
+                  lineHeight: 1.6,
+                  color: '#17221d',
+                  whiteSpace: 'pre-wrap',
+                }}
+              >
+                {viewDetailDraft.body}
+              </div>
+            </div>
+
+            {viewDetailDraft.replyMessage && (
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 800, color: '#15803d', marginBottom: '4px' }}>
+                  INCOMING PROSPECT REPLY (DEMO)
+                </div>
+                <div
+                  style={{
+                    padding: '14px',
+                    borderRadius: '8px',
+                    background: '#f0fdf4',
+                    border: '1px solid #86efac',
+                    fontSize: '12px',
+                    lineHeight: 1.6,
+                    color: '#14532d',
+                    whiteSpace: 'pre-wrap',
+                  }}
+                >
+                  {viewDetailDraft.replyMessage}
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setViewDetailDraft(null)}
+                className="btn btn-dark"
+                style={{ padding: '8px 18px', fontSize: '12px', fontWeight: 700, borderRadius: '7px' }}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

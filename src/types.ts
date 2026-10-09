@@ -163,6 +163,7 @@ export interface GlobalSearchCriteria {
   region: string;
   buying_signal: string;
   target_role: string;
+  max_results?: number;
 }
 
 export interface DiscoveredCompany {
