@@ -36,11 +36,12 @@ wheels/
 *.db
 *.sqlite3
 
-# Environment files
+# Environment files & Local runtime data
 .env
 .env.local
 .env.*.local
 backend/.env
+data/
 
 # IDE / OS
 .vscode/

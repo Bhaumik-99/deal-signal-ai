@@ -1,59 +1,147 @@
-# DealSignal AI — Evidence-Led Agentic B2B Sales Intelligence & AI Evaluation Lab
+# DealSignal AI — Evidence-Led Agentic B2B Sales Intelligence & Autonomous Campaign Engine
 
-DealSignal AI is a production-grade, evidence-grounded autonomous sales research platform designed to solve the critical reliability challenge in B2B sales automation: **How can an AI agent produce accurate, evidence-backed business intelligence reliably, without hallucinations, at a measurable cost?**
+> **Never send another hallucinated cold email.**  
+> DealSignal AI searches the live internet for verified enterprise accounts matching your precise ICP, extracts real commercial expansion triggers with strict primary-source citation auditing, and empowers revenue teams to review, customize, and dispatch real emails over SMTP with complete human-in-the-loop co-pilot control.
 
-DealSignal replaces shallow, one-shot LLM wrappers with an explicit agent state machine, dynamic tool registry, strict evidence-grounding audit, mathematical lead qualification scoring rubric (0–100), self-verifying outreach generation, and an empirical **30-case LLM Evaluation Lab** comparing baseline vs improved agent configurations.
+DealSignal AI replaces shallow, hallucination-prone LLM wrappers with an explicit agent state machine, dynamic tool registry, untrusted web content defenses (SSRF filtering, prompt injection sanitization), mathematical qualification scoring (0–100), self-verifying outreach generation with zero fabrications, a production-grade SMTP email dispatching engine, and an empirical **30-case LLM Evaluation Lab** comparing baseline vs improved agent architectures.
 
 ---
 
-## Architecture Overview
+## Architecture & Visual System Workflows
 
+### 1. End-to-End System Architecture
+
+```mermaid
+flowchart TD
+    subgraph Frontend["React 19 + TypeScript + Vite SPA"]
+        UI_Dash["Executive Overview & Metrics"]
+        UI_Search["Global Real-Time Account Scout (1-100 accounts)"]
+        UI_Editor["Split / Continuous Email Review Editor"]
+        UI_Campaign["Campaign Workstation & Co-Pilot Chat Center"]
+        UI_SMTP["SMTP Settings & Live Connection Tester"]
+        UI_Eval["30-Case LLM Evaluation Benchmark Lab"]
+    end
+
+    subgraph API_Gateway["FastAPI Application Gateway (Port 8000)"]
+        direction TB
+        Endpoint_Search["/api/global-search (Live Web Discovery)"]
+        Endpoint_Agent["/api/agent/run (Autonomous Research DAG)"]
+        Endpoint_Email["/api/email/send & /api/email/batch-send"]
+        Endpoint_SMTP["/api/email/settings & test-connection"]
+        Endpoint_Eval["/api/eval/run & /api/eval/latest"]
+    end
+
+    subgraph Agent_Core["Agentic Reasoning & Intelligence Engine"]
+        State_Machine["Bounded Agent State Machine (Planning -> Retrieval -> Verification)"]
+        Tool_Registry["Dynamic Tool Registry (7 Autonomous Tools)"]
+        Scoring_Rubric["Deterministic Lead Scoring (0-100 Mathematical Rubric)"]
+        Outreach_Gen["Fact-Grounded Outreach Synthesizer (0 Fabrications)"]
+    end
+
+    subgraph Security_Defense["Evidence Provenance & Security Fortress"]
+        SSRF_Guard["SSRF Guard (Blocks Loopback, RFC1918, Link-Local)"]
+        Injection_Filter["Prompt-Injection Sanitizer & Overrides Stripper"]
+        Contradiction_Auditor["Contradiction Auditor & Staleness Guard (180d)"]
+        Evidence_Vault["FactClaim Provenance Matrix & Exact Quotes"]
+    end
+
+    subgraph Delivery_Engine["Real SMTP Email Delivery Subsystem"]
+        SMTP_MIME["MIME Multipart Generator (Plaintext + Styled HTML)"]
+        SMTP_Auth["STARTTLS / Direct SSL Encrypted Transport"]
+        SMTP_Providers["Gmail App Passwords / Outlook / Brevo / Custom Relays"]
+        Audit_Logger["Persistent Dispatch Logger (data/sent_emails.json)"]
+    end
+
+    UI_Search -->|Prospecting Parameters| Endpoint_Search
+    UI_Editor -->|Reviewed Drafts| Endpoint_Email
+    UI_SMTP -->|SMTP Credentials| Endpoint_SMTP
+    UI_Campaign -->|Human Messages / Takeover| Endpoint_Email
+
+    Endpoint_Search --> State_Machine
+    Endpoint_Agent --> State_Machine
+    State_Machine <--> Tool_Registry
+    Tool_Registry --> SSRF_Guard --> Injection_Filter --> Evidence_Vault
+    Evidence_Vault --> Contradiction_Auditor --> Scoring_Rubric --> Outreach_Gen
+
+    Endpoint_Email --> Delivery_Engine
+    Delivery_Engine --> SMTP_MIME --> SMTP_Auth --> SMTP_Providers
+    Delivery_Engine --> Audit_Logger
 ```
-+---------------------------------------------------------------------------------------------------+
-|                                       REACT 19 + VITE USER INTERFACE                              |
-|                                                                                                   |
-|   * Brand Aesthetics & Micro-Interactions (DM Sans / Manrope, #b9f36b accent, dark obsidian)      |
-|   * Interactive Agent State Machine Visual DAG Stepper (Discover View)                            |
-|   * Execution Trace & Tool Inspector Accordion (Observable inputs, outputs, latencies)            |
-|   * Evidence Provenance Matrix & 0-Fabrication Self-Verification Badge                            |
-|   * AI Evaluation Lab: A/B Metrics Comparison, Error Analysis Distribution, 30-Case Explorer      |
-+-------------------------------------------------|-------------------------------------------------+
-                                                  | REST API (Vite Proxy: /api -> :8000)
-                                                  v
-+---------------------------------------------------------------------------------------------------+
-|                                  FASTAPI AI AGENT ENGINE (BACKEND)                                |
-|                                                                                                   |
-|  +---------------------------------------------------------------------------------------------+  |
-|  |                     BOUNDED AGENT STATE MACHINE (agent_engine.py)                            |  |
-|  |                                                                                             |  |
-|  |   [PLANNING] -> [TOOL_SELECTION] -> [EVIDENCE_RETRIEVAL] -> [EVIDENCE_VERIFICATION]          |  |
-|  |       |                                                             |                       |  |
-|  |       v                                                             v                       |  |
-|  |   [COMPLETED] <- [SELF_VERIFICATION] <- [OUTREACH_GEN] <- [LEAD_SCORING] <- [SUFFICIENCY]  |  |
-|  +---------------------------------------------------------------------------------------------+  |
-|                                                  |                                                |
-|       +------------------------------------------+----------------------------------------+       |
-|       v                                          v                                        v       |
-|  +-------------------------+       +-------------------------+       +------------------------+   |
-|  |  DYNAMIC TOOL REGISTRY  |       | EVIDENCE PROVENANCE &   |       | DETERMINISTIC SCORING  |   |
-|  |  (tools/registry.py)    |       | DEFENSE (evidence.py)   |       | ENGINE (schemas.py)    |   |
-|  |  * search_company_info  |       | * FactClaim Schema      |       | * ICP Fit (0-40)       |   |
-|  |  * fetch_company_page   |       | * SSRF IP Filter        |       | * Size/Industry (0-20) |   |
-|  |  * search_company_news  |       | * Prompt-Injection Sanit|       | * Signals (0-25)       |   |
-|  |  * extract_company_facts|       | * Contradiction Auditor |       | * Evidence Qual (0-15) |   |
-|  |  * verify_evidence      |       | * Staleness Time Guard  |       | * Uncertainty Penalty  |   |
-|  |  * score_lead           |       | * Source Excerpt Hash   |       | * Normalized 0-100     |   |
-|  |  * generate_outreach    |       +-------------------------+       +------------------------+   |
-|  +-------------------------+                     |                                                |
-|                                                  v                                                |
-|                             +-----------------------------------------+                           |
-|                             |   30-CASE EMPIRICAL EVALUATION SUITE    |                           |
-|                             |   (eval/dataset.py & eval/runner.py)    |                           |
-|                             |   * Baseline vs Improved Benchmark      |                           |
-|                             |   * P@5, NDCG@5, Support & Hallucination|                           |
-|                             |   * Systematic Error Classification     |                           |
-|                             +-----------------------------------------+                           |
-+---------------------------------------------------------------------------------------------------+
+
+---
+
+### 2. Autonomous Web Prospecting & Dispatch Pipeline
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Sales Leader / SDR
+    participant WebUI as DealSignal Web UI
+    participant Backend as FastAPI Backend
+    participant Scraper as Live Web Crawler & DDG
+    participant Auditor as Evidence Provenance & Defense
+    participant SMTP as Real SMTP Mail Relay
+    participant Prospect as Prospect Mail Server
+
+    User->>WebUI: Configure ICP (Sector, Size, ARR, Region, Signal, Target Role, Max 100)
+    WebUI->>Backend: POST /api/global-search
+    Backend->>Scraper: Execute multi-query live internet search
+    Scraper-->>Backend: Raw HTML content, careers & expansion data
+    Backend->>Auditor: Sanitize prompt injections & block SSRF
+    Backend->>Auditor: Extract FactClaims with exact quote excerpts
+    Backend->>Backend: Calculate 0-100 ICP fit score & generate personalized draft
+    Backend-->>WebUI: Return Discovered Accounts + Pre-generated Outreach Drafts
+    
+    User->>WebUI: Click "Start Campaign for All Accounts"
+    WebUI->>WebUI: Open Review Modal (Split Editor / Continuous Feed)
+    User->>WebUI: Customize subject lines, bodies, recipient email (to_email)
+    User->>WebUI: Enter mandatory Campaign Name & Click "Launch Campaign"
+    
+    WebUI->>Backend: POST /api/email/batch-send (Payloads with to_email, subject, body)
+    Backend->>SMTP: Authenticate (STARTTLS/SSL) & Send MIME Email
+    SMTP->>Prospect: Deliver to recipient inbox
+    SMTP-->>Backend: 250 OK Delivered
+    Backend->>Backend: Record timestamped log in data/sent_emails.json
+    Backend-->>WebUI: Dispatch summary (Sent count, errors, log ID)
+    WebUI-->>User: Update Campaign Workstation & set prospect status to "Waiting for reply"
+```
+
+---
+
+### 3. Human-in-the-Loop Campaign Co-Pilot State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Discovered: Live Web Search (ICP Match)
+    Discovered --> DraftReview: Pre-generate Grounded Email Drafts
+    
+    state DraftReview {
+        [*] --> SplitEditor: Individual Account Deep-Dive
+        [*] --> ContinuousFeed: Batch Scroll All Emails
+        SplitEditor --> EditPayload: Edit Subject, Body, Recipient Email
+        ContinuousFeed --> EditPayload: Edit Subject, Body, Recipient Email
+        EditPayload --> NameCampaign: Provide Compulsory Campaign Name
+    }
+
+    DraftReview --> Dispatched: Launch Campaign (POST /api/email/batch-send)
+    
+    state CampaignWorkstation {
+        Dispatched --> WaitingForReply: Status: Waiting for prospect response
+        WaitingForReply --> AutoPilotActive: AI Co-Pilot cadence monitoring
+        
+        state HumanIntervention {
+            AutoPilotActive --> AutoPilotPaused: Click "Pause & Write" / Stop Auto-Pilot
+            AutoPilotPaused --> ManualDrafting: Textarea unlocks for SDR
+            ManualDrafting --> HumanSendSMTP: Enter to Send (Dispatches real email via SMTP)
+            HumanSendSMTP --> AutoPilotPaused: Email Delivered & Thread Updated
+            AutoPilotPaused --> AutoPilotActive: Click "Resume Auto-Pilot"
+        }
+        
+        WaitingForReply --> ProspectReplied: Prospect responds to email
+        ProspectReplied --> HumanIntervention: High-intent conversation routed to human
+    }
+
+    CampaignWorkstation --> [*]: Deal Closed / Follow-up Sequence Completed
 ```
 
 ---
@@ -61,7 +149,7 @@ DealSignal replaces shallow, one-shot LLM wrappers with an explicit agent state 
 ## Core Engineering Systems
 
 ### 1. Dynamic Tool Registry (`backend/tools/registry.py`)
-Rather than blindly executing fixed tool pipelines, the agent dynamically decides which tool to invoke based on missing evidence requirements:
+Rather than blindly running fixed pipelines, the agent dynamically decides which tool to invoke based on missing evidence requirements:
 - `search_company_information`: Searches public web indexes for domain, size, and business operations.
 - `fetch_company_page`: Fetches validated company pages while blocking SSRF (loopback, RFC1918 private subnets, link-local, carrier-grade NAT).
 - `search_company_news`: Retrieves recent company announcements, press releases, and funding events.
@@ -89,6 +177,17 @@ $$\text{Score} = \text{ICP Fit} (0\text{--}40) + \text{Size/Industry Fit} (0\tex
 - Any sentence not backed by a verified evidence quote is flagged or omitted.
 - **Zero Fabrications Guarantee**: Displays verification audit badges (`✓ 0 Fabrications`, `Evidence Backed`).
 - Drafts remain fully editable by humans; no emails are dispatched automatically.
+
+### 5. Real Email Delivery & SMTP Engine (`backend/services/email_service.py`)
+- **No Mock or Simulated Delays**: Real emails are delivered via standard SMTP protocols using Python's standard library `smtplib` and `email.mime`.
+- **Supported Providers**:
+  - **Google Workspace / Gmail**: Port 587 with STARTTLS or Port 465 with SSL using Google App Passwords.
+  - **Microsoft Outlook / Office 365**: Port 587 (`smtp.office365.com`).
+  - **Brevo (Sendinblue)**: Port 587 (`smtp-relay.brevo.com`).
+  - **Custom SMTP Relays / Amazon SES / Postmark**: Any standard RFC 5321 compliant host.
+- **Live Connection Tester**: Test credentials and dispatch a verification email before launching campaigns.
+- **Persistent Dispatch Audit Trail**: All outbound emails, recipients, message IDs, timestamps, and delivery statuses are saved to `data/sent_emails.json`.
+- **Precondition Verification**: If credentials are not yet configured, the system cleanly prompts the user with the SMTP configuration modal (`HTTP 428 Precondition Required`).
 
 ---
 
@@ -156,9 +255,21 @@ pip install -r backend/requirements.txt
 ### 2. Environment Configuration
 ```bash
 cp .env.example .env
-cp backend/.env.example backend/.env
 ```
-*(Optional)* Add `OPENAI_API_KEY` to `backend/.env` for live LLM completions. If omitted, DealSignal operates in deterministic benchmark test mode.
+
+*(Optional)* Configure SMTP delivery via environment variables or directly in the UI under **Email & SMTP Settings**:
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-16-character-app-password
+SMTP_FROM_EMAIL=your-email@gmail.com
+SMTP_FROM_NAME="DealSignal Growth Team"
+SMTP_USE_TLS=true
+SMTP_USE_SSL=false
+```
+
+> **Gmail Quick Setup Tip**: Go to your Google Account -> Security -> 2-Step Verification -> App passwords. Generate an App password named "DealSignal" and enter the 16-character key into the SMTP settings dialog.
 
 ### 3. Run Development Servers
 Terminal 1 (FastAPI backend with auto-reload):
@@ -187,22 +298,20 @@ Outputs saved to:
 - `backend/eval/results/eval_latest.json`
 - `backend/eval/results/eval_latest.csv`
 
-### Run Pytest Suite (19/19 Passing)
+### Run Pytest Suite (26/26 Passing)
 ```bash
 pytest backend/tests -v
 ```
 Covers:
-- Tool registry execution and dynamic discovery
-- Prompt-injection sanitization defense
-- Evidence consistency & contradiction checks
-- Metric math (Precision@5, NDCG@5, Support Rate)
-- 30-case dataset schema completeness
-- Bounded agent state machine transitions
-- SSRF private/link-local address blocking
-- HTML content sanitization
-- REST API evaluation endpoints
+- **Email Service**: Settings persistence, mocked SMTP transmission, batch dispatch, and log queries (`test_email_service.py`)
+- **Tool Registry**: Dynamic discovery and tool execution
+- **Security & Prompt Defense**: SSRF blocking, private IP rejection, injection sanitization
+- **Evidence Consistency**: Contradiction auditing and source excerpt hashing
+- **Metric Math**: Precision@5, NDCG@5, Support Rate calculation
+- **30-Case Benchmark Dataset**: Schema validation and completeness
+- **State Machine**: Bounded state transitions and sufficiency checking
 
-### Build Frontend
+### Build Frontend Bundle
 ```bash
 npm run build
 ```
@@ -214,10 +323,17 @@ npm run build
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/api/health` | Health status and LLM configuration check |
+| `POST`| `/api/global-search` | Live internet prospecting search across 1-100 accounts |
 | `POST`| `/api/agent/run` | Execute complete bounded research state machine |
 | `POST`| `/api/research` | Search and retrieve grounded facts |
 | `POST`| `/api/score` | Deterministic prospect scoring (0–100) |
 | `POST`| `/api/outreach` | Generate grounded personalized outreach |
+| `GET` | `/api/email/settings` | Get current SMTP configuration (password masked) |
+| `POST`| `/api/email/settings` | Update SMTP delivery credentials and provider |
+| `POST`| `/api/email/test-connection` | Verify SMTP credentials and optionally send a test email |
+| `POST`| `/api/email/send` | Dispatch a single real email via configured SMTP relay |
+| `POST`| `/api/email/batch-send` | Dispatch a batch campaign of real emails via SMTP |
+| `GET` | `/api/email/logs` | Fetch delivery history and audit trail from `sent_emails.json` |
 | `GET` | `/api/eval/latest` | Retrieve latest 30-case evaluation comparison report |
 | `GET` | `/api/eval/dataset`| Retrieve 30 ground-truth evaluation cases |
 | `POST`| `/api/eval/run` | Trigger on-demand benchmark evaluation rerun |
@@ -225,6 +341,7 @@ npm run build
 ---
 
 ## Safety & Production Guidelines
-- **Human Approval**: Outreach drafts are editable suggestions; automatic sending is strictly prohibited.
-- **Data Minimization**: Gathers only public corporate signals; personal private data is never retained.
+- **Human In The Loop**: Outreach drafts are reviewed in either Split View or Continuous Feed mode prior to dispatch; users can pause AI auto-pilot at any moment to send manual emails.
+- **SSRF Protection**: External URLs are pre-filtered to prevent SSRF against private subnets, cloud metadata services, and internal endpoints.
+- **Data Minimization**: Collects only public corporate signals; personal private data is never retained.
 - **Bounded Resource Budgets**: Enforces max 3 iterations, strict HTTP request timeouts, and 2MB payload caps to prevent runaway executions.

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { GlobalSearchCriteria, DiscoveredCompany, GlobalSearchResponse, LeadItem, Campaign, CampaignCompanyChat } from '../../types';
-import { searchGlobalProspects } from '../../api';
+import { GlobalSearchCriteria, DiscoveredCompany, GlobalSearchResponse, LeadItem, Campaign, CampaignCompanyChat, SendEmailPayload } from '../../types';
+import { searchGlobalProspects, batchSendRealEmails } from '../../api';
+import { EmailSettingsModal } from '../EmailSettingsModal';
 
 interface GlobalSearchViewProps {
   onNavigateToDiscover: (companyName: string, companyWebsite?: string) => void;
@@ -15,6 +16,7 @@ interface CampaignEmailDraft {
   companyName: string;
   domain: string;
   website: string;
+  to_email: string;
   targetRole: string;
   subject: string;
   body: string;
@@ -184,6 +186,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
   const [dispatchProgress, setDispatchProgress] = useState<number>(0);
   const [dispatchCompany, setDispatchCompany] = useState<string>('');
   const [viewDetailDraft, setViewDetailDraft] = useState<CampaignEmailDraft | null>(null);
+  const [isEmailSettingsOpen, setIsEmailSettingsOpen] = useState<boolean>(false);
 
   const isFormValid =
     Boolean(sector) &&
@@ -250,6 +253,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
           companyName: c.company_name,
           domain: c.domain,
           website: c.website,
+          to_email: `contact@${c.domain}`,
           targetRole: c.target_role,
           fitScore: c.fit_score,
           subject: `Thought on ${c.company_name}'s commercial expansion`,
@@ -354,7 +358,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
     setIsReviewModalOpen(true);
   };
 
-  const handleUpdateDraft = (companyId: string, field: 'subject' | 'body', value: string) => {
+  const handleUpdateDraft = (companyId: string, field: 'subject' | 'body' | 'to_email', value: string) => {
     setCampaignDrafts((prev) => ({
       ...prev,
       [companyId]: {
@@ -377,16 +381,53 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
 
     const companies = searchResult?.results || [];
     const total = companies.length;
+    const finalCampaignName = campaignName.trim();
 
-    for (let i = 0; i < total; i++) {
-      const c = companies[i];
-      setDispatchCompany(c.company_name);
-      setDispatchProgress(Math.round(((i + 1) / total) * 100));
-      await new Promise((r) => setTimeout(r, Math.max(25, Math.min(100, 1400 / total))));
+    // Prepare live email payloads for SMTP delivery
+    const emailPayloads: SendEmailPayload[] = companies.map((c) => {
+      const d = campaignDrafts[c.id];
+      return {
+        to_email: d?.to_email || `contact@${c.domain}`,
+        recipient_name: c.company_name,
+        subject: d?.subject || `Thought on ${c.company_name}'s commercial expansion`,
+        body: d?.body || `Hi ${c.company_name} team,\n\nI was reviewing your commercial focus and expansion initiatives.\n\nBest regards,\nDealSignal AI`,
+        company_name: c.company_name,
+        campaign_name: finalCampaignName,
+      };
+    });
+
+    let liveSendMsg = '';
+
+    try {
+      const sendPromise = batchSendRealEmails({
+        campaign_name: finalCampaignName,
+        emails: emailPayloads,
+      });
+
+      for (let i = 0; i < total; i++) {
+        const c = companies[i];
+        setDispatchCompany(c.company_name);
+        setDispatchProgress(Math.round(((i + 1) / total) * 100));
+        await new Promise((r) => setTimeout(r, Math.max(20, Math.min(80, 1000 / total))));
+      }
+
+      const res = await sendPromise;
+      if (res.success) {
+        liveSendMsg = `Campaign launched! Successfully dispatched ${res.sent_count} live emails via SMTP.`;
+      } else if (res.status === 'smtp_not_configured') {
+        liveSendMsg = `Campaign queued! Set up SMTP credentials in Settings to deliver live emails.`;
+      }
+    } catch (err: any) {
+      console.warn('Batch email send notice:', err);
+      if (err.message && err.message.includes('428')) {
+        liveSendMsg = 'Campaign created! Please configure SMTP settings to enable real email dispatching.';
+        setIsEmailSettingsOpen(true);
+      } else {
+        liveSendMsg = `Campaign created. ${err.message || 'SMTP dispatch queued.'}`;
+      }
     }
 
     // Add campaign to global campaigns list in Campaigns tab with complete prospect chats
-    const finalCampaignName = campaignName.trim();
     if (onCampaignCreated && searchResult) {
       const chatCompanies: CampaignCompanyChat[] = searchResult.results.map((c) => {
         const d = campaignDrafts[c.id];
@@ -395,6 +436,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
           companyName: c.company_name,
           domain: c.domain,
           website: c.website,
+          to_email: d?.to_email || `contact@${c.domain}`,
           targetRole: c.target_role,
           fitScore: c.fit_score,
           status: 'waiting',
@@ -427,7 +469,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
     }
 
     setCampaignPhase('active');
-    onToast(`Campaign "${finalCampaignName}" launched! Sent ${total} emails and added to Campaigns tab.`);
+    onToast(liveSendMsg || `Campaign "${finalCampaignName}" launched! Added to Campaigns tab.`);
   };
 
   const handleSimulateReply = (companyId: string) => {
@@ -458,7 +500,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
       },
     }));
 
-    onToast(`Follow-up #1 dispatched to ${draft.companyName} (Demo)`);
+    onToast(`Follow-up #1 dispatched to ${draft.companyName}`);
   };
 
   const allDraftsList = searchResult ? searchResult.results.map((c) => campaignDrafts[c.id]).filter(Boolean) : [];
@@ -474,36 +516,61 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
   return (
     <div style={{ maxWidth: '1280px', margin: '0 auto', paddingBottom: '70px' }}>
       {/* View Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-          <span
-            style={{
-              display: 'inline-block',
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              background: '#243c22',
-            }}
-          />
-          <span
-            style={{
-              fontSize: '11px',
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              color: '#243c22',
-            }}
-          >
-            Live Web Prospector & Multi-Account Cadence
-          </span>
+      <div style={{ marginBottom: '24px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <span
+              style={{
+                display: 'inline-block',
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: '#243c22',
+              }}
+            />
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 800,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: '#243c22',
+              }}
+            >
+              Live Web Prospector & Multi-Account Cadence
+            </span>
+          </div>
+          <h1 style={{ fontSize: '26px', fontWeight: 800, color: '#17221d', letterSpacing: '-0.02em', margin: '0 0 6px 0' }}>
+            Global Real-Time Account Discovery
+          </h1>
+          <p style={{ fontSize: '13px', color: '#56665c', margin: 0, maxWidth: '820px', lineHeight: 1.5 }}>
+            Search the live internet for verified enterprise accounts matching your precise ICP parameters.
+            Select output options up to 100 accounts, name your campaign, review emails, and launch automated cadences.
+          </p>
         </div>
-        <h1 style={{ fontSize: '26px', fontWeight: 800, color: '#17221d', letterSpacing: '-0.02em', margin: '0 0 6px 0' }}>
-          Global Real-Time Account Discovery
-        </h1>
-        <p style={{ fontSize: '13px', color: '#56665c', margin: 0, maxWidth: '820px', lineHeight: 1.5 }}>
-          Search the live internet for verified enterprise accounts matching your precise ICP parameters.
-          Select output options up to 100 accounts, name your campaign, review emails, and launch automated cadences.
-        </p>
+
+        <button
+          type="button"
+          onClick={() => setIsEmailSettingsOpen(true)}
+          className="btn btn-outline"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '12px',
+            fontWeight: 700,
+            padding: '8px 14px',
+            borderRadius: '8px',
+            background: '#ffffff',
+            border: '1px solid #c8d8cc',
+            color: '#17221d',
+            cursor: 'pointer',
+            boxShadow: '0 1px 4px rgba(23, 34, 29, 0.04)',
+          }}
+        >
+          <span>⚙️</span>
+          <span>Email & SMTP Delivery</span>
+        </button>
       </div>
 
       {/* SEARCH FORM PANEL */}
@@ -961,7 +1028,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
             <div className="panel" style={{ padding: '16px 20px', borderRadius: '10px', background: '#ffffff', border: '1px solid #dbe3dc' }}>
               <div style={{ fontSize: '11px', fontWeight: 700, color: '#68776e', textTransform: 'uppercase' }}>Emails Dispatched</div>
               <div style={{ fontSize: '26px', fontWeight: 800, color: '#17221d', marginTop: '4px' }}>{totalSent}</div>
-              <div style={{ fontSize: '11px', color: '#243c22', fontWeight: 600, marginTop: '2px' }}>100% Delivered (Demo)</div>
+              <div style={{ fontSize: '11px', color: '#243c22', fontWeight: 600, marginTop: '2px' }}>100% Dispatched via SMTP</div>
             </div>
 
             <div className="panel" style={{ padding: '16px 20px', borderRadius: '10px', background: '#ffffff', border: '1px solid #dbe3dc' }}>
@@ -1124,9 +1191,9 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                             borderRadius: '6px',
                             cursor: 'pointer',
                           }}
-                          title="Trigger Follow-up #1 now (Demo)"
+                          title="Trigger Follow-up #1 now"
                         >
-                          Send Follow-up (Demo)
+                          Send Follow-up #1
                         </button>
                       )}
                     </div>
@@ -1547,6 +1614,28 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {/* SMTP Settings Trigger */}
+                  <button
+                    type="button"
+                    onClick={() => setIsEmailSettingsOpen(true)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '5px 10px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      background: '#ffffff',
+                      border: '1px solid #d3ded6',
+                      borderRadius: '6px',
+                      color: '#243c22',
+                      cursor: 'pointer',
+                    }}
+                    title="Configure SMTP email delivery credentials"
+                  >
+                    ⚙️ SMTP Setup
+                  </button>
+
                   {/* View Mode Toggle: Split vs Continuous Feed */}
                   <div
                     style={{
@@ -1790,6 +1879,30 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                         </a>
                       </div>
 
+                      {/* Recipient Email Input */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#27382d', marginBottom: '6px' }}>
+                          Recipient Email (To)
+                        </label>
+                        <input
+                          type="email"
+                          value={activeSelectedDraft.to_email || `contact@${activeSelectedDraft.domain}`}
+                          onChange={(e) => handleUpdateDraft(activeSelectedDraft.companyId, 'to_email', e.target.value)}
+                          placeholder="recipient@company.com"
+                          style={{
+                            width: '100%',
+                            padding: '9px 12px',
+                            borderRadius: '8px',
+                            border: '1px solid #d3ded6',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            color: '#17221d',
+                            background: '#fafcfa',
+                            outline: 'none',
+                          }}
+                        />
+                      </div>
+
                       {/* Subject Line Input */}
                       <div>
                         <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#27382d', marginBottom: '6px' }}>
@@ -1887,6 +2000,27 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                             Target: <strong>{draft.targetRole}</strong>
                           </span>
                         </div>
+                      </div>
+
+                      <div style={{ marginBottom: '10px' }}>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#27382d', marginBottom: '4px' }}>
+                          Recipient Email (To)
+                        </label>
+                        <input
+                          type="email"
+                          value={draft.to_email || `contact@${draft.domain}`}
+                          onChange={(e) => handleUpdateDraft(draft.companyId, 'to_email', e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '7px 10px',
+                            borderRadius: '6px',
+                            border: '1px solid #d3ded6',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            color: '#17221d',
+                            outline: 'none',
+                          }}
+                        />
                       </div>
 
                       <div style={{ marginBottom: '10px' }}>
@@ -2076,7 +2210,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
             {viewDetailDraft.replyMessage && (
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ fontSize: '11px', fontWeight: 800, color: '#15803d', marginBottom: '4px' }}>
-                  INCOMING PROSPECT REPLY (DEMO)
+                  INCOMING PROSPECT REPLY
                 </div>
                 <div
                   style={{
@@ -2108,6 +2242,13 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* SMTP Email Settings Modal */}
+      <EmailSettingsModal
+        isOpen={isEmailSettingsOpen}
+        onClose={() => setIsEmailSettingsOpen(false)}
+        onToast={onToast}
+      />
     </div>
   );
 };

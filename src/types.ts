@@ -209,6 +209,7 @@ export interface CampaignCompanyChat {
   companyName: string;
   domain: string;
   website?: string;
+  to_email?: string;
   targetRole: string;
   fitScore: number;
   status: 'waiting' | 'replied' | 'meeting_scheduled';
@@ -227,4 +228,44 @@ export interface Campaign {
   leads_count: number;
   companies?: CampaignCompanyChat[];
 }
+
+export interface EmailSettings {
+  smtp_host: string;
+  smtp_port: number;
+  smtp_user: string;
+  smtp_password?: string;
+  from_email: string;
+  from_name: string;
+  use_tls: boolean;
+  use_ssl: boolean;
+  is_configured: boolean;
+}
+
+export interface SendEmailPayload {
+  to_email: string;
+  recipient_name?: string;
+  subject: string;
+  body: string;
+  company_name?: string;
+  sender_name?: string;
+  campaign_name?: string;
+}
+
+export interface BatchSendEmailPayload {
+  emails: SendEmailPayload[];
+  campaign_name?: string;
+}
+
+export interface TestConnectionPayload {
+  test_recipient?: string;
+  smtp_host?: string;
+  smtp_port?: number;
+  smtp_user?: string;
+  smtp_password?: string;
+  from_email?: string;
+  from_name?: string;
+  use_tls?: boolean;
+  use_ssl?: boolean;
+}
+
 

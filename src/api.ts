@@ -6,7 +6,11 @@ import {
   OutreachDraft,
   HealthResponse,
   GlobalSearchCriteria,
-  GlobalSearchResponse
+  GlobalSearchResponse,
+  EmailSettings,
+  SendEmailPayload,
+  BatchSendEmailPayload,
+  TestConnectionPayload
 } from './types';
 
 const API_BASE = '/api';
@@ -155,5 +159,76 @@ export async function searchGlobalProspects(criteria: GlobalSearchCriteria): Pro
   return res.json();
 }
 
+export async function getEmailSettings(): Promise<EmailSettings> {
+  const res = await fetch(`${API_BASE}/email/settings`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch email settings (${res.status})`);
+  }
+  return res.json();
+}
 
+export async function updateEmailSettings(settings: Partial<EmailSettings>): Promise<EmailSettings> {
+  const res = await fetch(`${API_BASE}/email/settings`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(settings),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to update email settings (${res.status})`);
+  }
+  return res.json();
+}
 
+export async function testEmailConnection(payload?: TestConnectionPayload): Promise<any> {
+  const res = await fetch(`${API_BASE}/email/test-connection`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {}),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || `SMTP connection test failed (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function sendRealEmail(payload: SendEmailPayload): Promise<any> {
+  const res = await fetch(`${API_BASE}/email/send`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const err: any = new Error(errorData.detail || `Email dispatch failed (${res.status})`);
+    err.status = res.status;
+    err.requiresConfig = res.status === 428;
+    throw err;
+  }
+  return res.json();
+}
+
+export async function batchSendRealEmails(payload: BatchSendEmailPayload): Promise<any> {
+  const res = await fetch(`${API_BASE}/email/batch-send`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    const err: any = new Error(errorData.detail || `Batch dispatch failed (${res.status})`);
+    err.status = res.status;
+    err.requiresConfig = res.status === 428;
+    throw err;
+  }
+  return res.json();
+}
+
+export async function getEmailLogs(limit?: number): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/email/logs?limit=${limit || 50}`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch email logs (${res.status})`);
+  }
+  return res.json();
+}

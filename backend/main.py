@@ -34,6 +34,13 @@ from backend.services.global_prospector import (
     GlobalSearchResponse,
     GlobalProspectorService,
 )
+from backend.services.email_service import (
+    email_service,
+    EmailSettings,
+    SendEmailRequest,
+    BatchSendEmailRequest,
+    TestConnectionRequest,
+)
 
 # Initialize database schema
 Base.metadata.create_all(bind=engine)
@@ -503,5 +510,55 @@ async def search_global_prospects(criteria: GlobalSearchCriteria):
         return GlobalProspectorService.search_internet(criteria)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Global prospect search failed: {str(e)}")
+
+
+# ================== REAL EMAIL DISPATCH & SMTP CONFIG ==================
+
+@app.get("/api/email/settings")
+def get_email_settings():
+    """Retrieve current email delivery and SMTP settings (passwords masked)."""
+    return email_service.get_settings(mask_password=True).model_dump()
+
+
+@app.post("/api/email/settings")
+def update_email_settings(payload: dict):
+    """Update SMTP settings for real email dispatch."""
+    return email_service.update_settings(payload).model_dump()
+
+
+@app.post("/api/email/test-connection")
+def test_email_connection(payload: Optional[TestConnectionRequest] = None):
+    """Test SMTP handshake/credentials and optionally send a test email."""
+    res = email_service.test_connection(payload)
+    if not res.get("success"):
+        raise HTTPException(status_code=400, detail=res.get("error", "SMTP test failed"))
+    return res
+
+
+@app.post("/api/email/send")
+def send_real_email(payload: SendEmailRequest):
+    """Send a real B2B email to a prospect."""
+    res = email_service.send_email(payload)
+    if not res.get("success"):
+        if res.get("requires_config"):
+            raise HTTPException(status_code=428, detail=res.get("error"))
+        raise HTTPException(status_code=500, detail=res.get("error", "Email dispatch failed"))
+    return res
+
+
+@app.post("/api/email/batch-send")
+def batch_send_real_emails(payload: BatchSendEmailRequest):
+    """Batch send real B2B emails for a campaign."""
+    res = email_service.batch_send_emails(payload)
+    if res.get("requires_config"):
+        raise HTTPException(status_code=428, detail=res.get("error"))
+    return res
+
+
+@app.get("/api/email/logs")
+def get_email_logs(limit: int = 50):
+    """Retrieve audit log of sent emails."""
+    return email_service.get_sent_emails(limit=limit)
+
 
 

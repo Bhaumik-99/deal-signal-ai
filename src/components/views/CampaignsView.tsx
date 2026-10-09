@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { LeadItem, Campaign, CampaignCompanyChat, ChatMessage } from '../../types';
+import { sendRealEmail } from '../../api';
+import { EmailSettingsModal } from '../EmailSettingsModal';
 
 interface CampaignsViewProps {
   leads: LeadItem[];
@@ -267,6 +269,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
   const [companySearchFilter, setCompanySearchFilter] = useState('');
   const [companyStatusFilter, setCompanyStatusFilter] = useState<'all' | 'waiting' | 'replied' | 'human'>('all');
   const [humanMessageText, setHumanMessageText] = useState('');
+  const [isEmailSettingsOpen, setIsEmailSettingsOpen] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const chatMessagesEndRef = useRef<HTMLDivElement>(null);
@@ -378,6 +381,7 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
   const handleSendHumanMessage = (companyId: string) => {
     if (!selectedCampaign || !humanMessageText.trim()) return;
     const currentList = getCompaniesForSelectedCampaign(selectedCampaign);
+    const targetComp = currentList.find((c) => c.companyId === companyId);
     const textToSend = humanMessageText.trim();
     const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -404,7 +408,32 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
       [selectedCampaign.id]: updated,
     }));
     setHumanMessageText('');
-    onToast('Message sent.');
+
+    if (targetComp) {
+      const recipientEmail = targetComp.to_email || (targetComp.domain ? `contact@${targetComp.domain}` : 'contact@company.com');
+      sendRealEmail({
+        to_email: recipientEmail,
+        recipient_name: targetComp.companyName,
+        subject: `Re: Outbound conversation with ${targetComp.companyName}`,
+        body: textToSend,
+        company_name: targetComp.companyName,
+        campaign_name: selectedCampaign.name,
+      })
+        .then((res) => {
+          if (res.success) {
+            onToast(`Email dispatched via SMTP to ${recipientEmail}`);
+          } else if (res.status === 'smtp_not_configured') {
+            onToast('Message logged. (Configure SMTP settings to deliver live emails)');
+          }
+        })
+        .catch((err) => {
+          console.warn('Real email dispatch notice:', err);
+          onToast('Message saved. Configure SMTP settings to send live emails.');
+        });
+    } else {
+      onToast('Message sent.');
+    }
+
     setTimeout(() => {
       chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       textareaRef.current?.focus();
@@ -545,6 +574,14 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
           </div>
 
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              className="btn btn-outline"
+              onClick={() => setIsEmailSettingsOpen(true)}
+              style={{ fontSize: '12px', padding: '7px 12px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+              title="Configure SMTP email delivery settings"
+            >
+              ⚙️ SMTP Settings
+            </button>
             <button
               className="btn btn-outline"
               onClick={() => {
@@ -819,8 +856,10 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
                       Fit {activeCompany.fitScore} / 100
                     </span>
                   </div>
-                  <div style={{ fontSize: '11px', color: '#68776e', marginTop: '2px' }}>
-                    Target Buyer Persona: <strong>{activeCompany.targetRole}</strong>
+                  <div style={{ fontSize: '11px', color: '#68776e', marginTop: '2px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <span>Target Buyer Persona: <strong>{activeCompany.targetRole}</strong></span>
+                    <span>•</span>
+                    <span>Recipient: <strong>{activeCompany.to_email || `contact@${activeCompany.domain}`}</strong></span>
                   </div>
                 </div>
 
@@ -1186,6 +1225,13 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
           </p>
         </div>
         <div className="page-actions" style={{ display: 'flex', gap: '8px' }}>
+          <button
+            className="btn btn-outline"
+            onClick={() => setIsEmailSettingsOpen(true)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+          >
+            ⚙️ SMTP Settings
+          </button>
           {approvedLeads.length > 0 && (
             <button className="btn btn-outline" onClick={handleCopyAllApproved}>
               📋 Copy All Approved ({approvedLeads.length})
@@ -1682,6 +1728,13 @@ export const CampaignsView: React.FC<CampaignsViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* SMTP Email Settings Modal */}
+      <EmailSettingsModal
+        isOpen={isEmailSettingsOpen}
+        onClose={() => setIsEmailSettingsOpen(false)}
+        onToast={onToast}
+      />
     </section>
   );
 };
