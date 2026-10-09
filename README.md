@@ -7,7 +7,7 @@ DealSignal AI replaces shallow, hallucination-prone LLM wrappers with an explici
 
 ---
 
-## Architecture & Visual System Workflows
+## Visual Architecture & System Workflows
 
 ### 1. End-to-End System Architecture
 
@@ -142,6 +142,76 @@ stateDiagram-v2
     }
 
     CampaignWorkstation --> [*]: Deal Closed / Follow-up Sequence Completed
+```
+
+---
+
+### 4. Zero-Fabrication Evidence Grounding & Citation Audit Pipeline
+
+```mermaid
+flowchart LR
+    A["Raw Scraped Web Content"] --> B["SSRF & IP Defense<br/>(RFC1918 / Loopback filter)"]
+    B --> C["Prompt Injection Defense<br/>(Override & prompt stripping)"]
+    C --> D["FactClaim Extractor<br/>(Key facts + verbatim citations)"]
+    D --> E["Cross-Source Verifier<br/>(URL checks & hash validation)"]
+    E --> F["Contradiction Auditor<br/>(Headcount & Funding conflicts)"]
+    F --> G["Sentence-by-Sentence Audit<br/>(Outreach claims verification)"]
+    G --> H{"Every Claim Backed?"}
+    H -->|Yes| I["✓ 0 Fabrications Verified<br/>(Display verified audit badge)"]
+    H -->|No| J["Redact / Flag Claim<br/>(Omit unverified statement)"]
+```
+
+---
+
+### 5. Deterministic Lead Scoring Rubric Architecture
+
+```mermaid
+flowchart TD
+    ICP["ICP Fit Score (0 - 40 pts)<br/>Sector, Business Model, Domain alignment"] --> Sum["Scoring Aggregator"]
+    Size["Firmographic Fit (0 - 20 pts)<br/>Employee Headcount & ARR match"] --> Sum
+    Signal["Commercial Intent Signals (0 - 25 pts)<br/>Hiring, Capital Raises, Tech Expansion"] --> Sum
+    Qual["Evidence Quality (0 - 15 pts)<br/>Primary Source Quotes & Temporal Recency"] --> Sum
+    
+    Sum --> Penalty["Uncertainty Penalty Subtraction<br/>(Deductions for stale & conflicting claims)"]
+    Penalty --> Final["Normalized Final Score (0 - 100 Scale)"]
+    
+    Final --> Decision{"Qualification Tier"}
+    Decision -->|>= 70| High["High ICP Tier (Priority Outbound)"]
+    Decision -->|50 - 69| Med["Medium ICP Tier (Nurture Sequence)"]
+    Decision -->|< 50| Low["Low ICP Tier (Reject / De-prioritize)"]
+```
+
+---
+
+### 6. Empirical 30-Case Benchmark Evaluation Architecture
+
+```mermaid
+flowchart TD
+    Dataset["30 Ground-Truth Test Cases<br/>(Growth, Funding, Negatives, Prompt Probes, Stale News)"]
+    
+    subgraph Benchmarks["Dual Agent Benchmark Execution"]
+        Baseline["Baseline Agent<br/>(Unconstrained, Shallow Wrap)"]
+        Improved["Improved Agent<br/>(State Machine, Provenance Vault, Tool Registry)"]
+    end
+    
+    subgraph Metrics_Engine["Empirical Metrics Engine"]
+        M1["Fact Extraction Accuracy: 64.6% -> 93.5% (+28.9%)"]
+        M2["Evidence Support Rate: 61.4% -> 96.8% (+35.4%)"]
+        M3["Hallucination Reduction: 35.0% -> 2.0% (-33.0%)"]
+        M4["Ranking Precision@5 (1.000) & NDCG@5 (1.000)"]
+    end
+    
+    subgraph Visual_Lab["Interactive Evaluation Lab (UI)"]
+        Lab_Comp["A/B Comparative Metrics Cards"]
+        Lab_Errors["Systematic Error Distribution Explorer"]
+        Lab_Cases["30-Case Deep-Dive Drawer & Ground Truth"]
+    end
+    
+    Dataset --> Baseline
+    Dataset --> Improved
+    Baseline --> Metrics_Engine
+    Improved --> Metrics_Engine
+    Metrics_Engine --> Visual_Lab
 ```
 
 ---
