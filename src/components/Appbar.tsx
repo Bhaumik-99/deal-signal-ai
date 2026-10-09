@@ -11,6 +11,7 @@ interface AppbarProps {
 const PAGE_LABELS: Record<string, string> = {
   home: 'Overview',
   discover: 'Discover',
+  global_search: 'Global Search',
   leads: 'Leads',
   evaluation: 'Evaluation Lab',
   campaigns: 'Campaigns',

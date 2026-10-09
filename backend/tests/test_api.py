@@ -112,3 +112,33 @@ def test_lead_approval_and_draft_update(client):
     draft_res = client.patch(f"/api/leads/{target_id}/draft", json={"draft": new_text})
     assert draft_res.status_code == 200
     assert draft_res.json()["updated"] is True
+
+
+def test_global_prospect_search_validation(client):
+    # Missing mandatory fields should fail validation with 422
+    invalid_res = client.post("/api/prospects/search", json={"sector": "b2b_saas"})
+    assert invalid_res.status_code == 422
+
+
+def test_global_prospect_search_success(client):
+    payload = {
+        "sector": "fintech",
+        "company_size": "500-2000",
+        "approx_revenue": "200M+",
+        "region": "North America (US & Canada)",
+        "buying_signal": "all_signals",
+        "target_role": "VP / Head of Sales & Revenue Operations"
+    }
+    res = client.post("/api/prospects/search", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["total_found"] > 0
+    assert len(data["results"]) > 0
+    assert "Scrapling" in data["scraping_engine"]
+    first = data["results"][0]
+    assert "company_name" in first
+    assert "domain" in first
+    assert "fit_score" in first
+    assert "evidence_excerpt" in first
+    assert 0 <= first["fit_score"] <= 100
+

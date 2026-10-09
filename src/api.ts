@@ -4,7 +4,9 @@ import {
   LeadItem,
   LeadScore,
   OutreachDraft,
-  HealthResponse
+  HealthResponse,
+  GlobalSearchCriteria,
+  GlobalSearchResponse
 } from './types';
 
 const API_BASE = '/api';
@@ -139,5 +141,19 @@ export async function runEvalBenchmark(): Promise<any> {
   }
   return res.json();
 }
+
+export async function searchGlobalProspects(criteria: GlobalSearchCriteria): Promise<GlobalSearchResponse> {
+  const res = await fetch(`${API_BASE}/prospects/search`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(criteria)
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Global prospect search failed (${res.status})`);
+  }
+  return res.json();
+}
+
 
 

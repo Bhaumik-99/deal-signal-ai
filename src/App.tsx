@@ -11,6 +11,7 @@ import { Appbar } from './components/Appbar';
 import { Sidebar } from './components/Sidebar';
 import { OverviewView } from './components/views/OverviewView';
 import { DiscoverView } from './components/views/DiscoverView';
+import { GlobalSearchView } from './components/views/GlobalSearchView';
 import { LeadsView } from './components/views/LeadsView';
 import { EvaluationLabView } from './components/views/EvaluationLabView';
 import { CampaignsView } from './components/views/CampaignsView';
@@ -219,6 +220,13 @@ export const App: React.FC = () => {
               {currentPage === 'discover' && (
                 <DiscoverView
                   initialCompanyName={discoverInitialCompany}
+                  onLeadSaved={handleLeadSaved}
+                  onToast={showToast}
+                />
+              )}
+              {currentPage === 'global_search' && (
+                <GlobalSearchView
+                  onNavigateToDiscover={handleNavigateToDiscover}
                   onLeadSaved={handleLeadSaved}
                   onToast={showToast}
                 />

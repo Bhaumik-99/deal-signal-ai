@@ -29,6 +29,11 @@ from backend.research_tools import ResearchTools, EVALUATION_COMPANIES_KNOWLEDGE
 from backend.llm_service import LLMService
 from backend.eval.runner import eval_runner, RESULTS_DIR
 from backend.eval.dataset import get_evaluation_dataset
+from backend.services.global_prospector import (
+    GlobalSearchCriteria,
+    GlobalSearchResponse,
+    GlobalProspectorService,
+)
 
 # Initialize database schema
 Base.metadata.create_all(bind=engine)
@@ -484,4 +489,19 @@ async def run_evaluation_benchmark():
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Evaluation execution failed: {str(e)}")
+
+
+# ================== GLOBAL INTERNET PROSPECTOR (SCRAPLING) ==================
+
+@app.post("/api/prospects/search", response_model=GlobalSearchResponse)
+async def search_global_prospects(criteria: GlobalSearchCriteria):
+    """
+    Search prospective B2B companies across the internet using Scrapling
+    strictly guided by mandatory search criteria.
+    """
+    try:
+        return GlobalProspectorService.search_internet(criteria)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Global prospect search failed: {str(e)}")
+
 

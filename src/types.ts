@@ -156,3 +156,41 @@ export interface EvalDatasetResponse {
   cases: EvalCase[];
 }
 
+export interface GlobalSearchCriteria {
+  sector: string;
+  company_size: string;
+  approx_revenue: string;
+  region: string;
+  buying_signal: string;
+  target_role: string;
+}
+
+export interface DiscoveredCompany {
+  id: string;
+  company_name: string;
+  domain: string;
+  website: string;
+  fit_score: number;
+  sector: string;
+  company_size: string;
+  approx_revenue: string;
+  region: string;
+  target_role: string;
+  buying_signal: string;
+  evidence_excerpt: string;
+  source_url: string;
+  scraped_timestamp: string;
+  scraping_engine: string;
+  is_verified: boolean;
+}
+
+export interface GlobalSearchResponse {
+  criteria: GlobalSearchCriteria;
+  total_found: number;
+  results: DiscoveredCompany[];
+  duration_ms: number;
+  scraping_engine: string;
+  scraped_sources: string[];
+  timestamp: string;
+}
+
