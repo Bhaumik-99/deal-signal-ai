@@ -2304,29 +2304,30 @@ table tbody tr:hover .company-logo {
   transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
               box-shadow 0.22s ease,
               border-color 0.22s ease;
-  background: #111714;
-  border: 1px solid #1f3025;
+  background: #ffffff;
+  border: 1px solid #dce5df;
+  border-radius: 14px;
 }
 
 .scout-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(52, 211, 153, 0.45);
-  box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.5), 0 0 1px 1px rgba(52, 211, 153, 0.2);
+  border-color: #243c22;
+  box-shadow: 0 16px 36px -10px rgba(23, 34, 29, 0.12), 0 0 1px 1px rgba(36, 60, 34, 0.15);
 }
 
 .scout-evidence-box {
-  background: #0c120f;
-  border: 1px solid #1e3327;
-  border-left: 3px solid #34d399;
+  background: #f7faf7;
+  border: 1px solid #d8e5da;
+  border-left: 3px solid #2e7d32;
   border-radius: 8px;
   padding: 12px 14px;
 }
 
 .scout-evidence-text {
-  color: #f8fafc;
+  color: #142018;
   font-size: 0.84rem;
   line-height: 1.55;
-  font-weight: 450;
+  font-weight: 500;
   letter-spacing: 0.01em;
 }
 

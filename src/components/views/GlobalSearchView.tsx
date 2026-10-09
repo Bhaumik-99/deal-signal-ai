@@ -61,15 +61,15 @@ const ROLE_OPTIONS = [
   { value: 'CFO / VP Finance & Procurement', label: 'CFO / VP Finance & Procurement' },
 ];
 
-// Refined, high-precision SVG icons
-const SearchIcon: React.FC<{ size?: number; color?: string }> = ({ size = 15, color = 'currentColor' }) => (
+// Clean, high-precision SVG icons
+const SearchIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = 'currentColor' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="8" />
     <line x1="21" y1="21" x2="16.65" y2="16.65" />
   </svg>
 );
 
-const ExternalLinkIcon: React.FC<{ size?: number; color?: string }> = ({ size = 13, color = 'currentColor' }) => (
+const ExternalLinkIcon: React.FC<{ size?: number; color?: string }> = ({ size = 12, color = 'currentColor' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
     <polyline points="15 3 21 3 21 9" />
@@ -98,13 +98,13 @@ const BookmarkIcon: React.FC<{ size?: number; color?: string }> = ({ size = 13, 
   </svg>
 );
 
-const LightningIcon: React.FC<{ size?: number; color?: string }> = ({ size = 13, color = 'currentColor' }) => (
+const LightningIcon: React.FC<{ size?: number; color?: string }> = ({ size = 12, color = 'currentColor' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
   </svg>
 );
 
-const TargetIcon: React.FC<{ size?: number; color?: string }> = ({ size = 13, color = 'currentColor' }) => (
+const TargetIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, color = 'currentColor' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10" />
     <circle cx="12" cy="12" r="6" />
@@ -216,58 +216,50 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
   };
 
   return (
-    <div className="view-container" style={{ maxWidth: '1180px', margin: '0 auto', paddingBottom: '3rem' }}>
-      {/* Sleek Minimalist Header (No AI Slop) */}
-      <div style={{ marginBottom: '1.75rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-          <span
-            style={{
-              fontSize: '0.72rem',
-              fontWeight: 700,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              color: '#34d399',
-              background: 'rgba(52, 211, 153, 0.12)',
-              border: '1px solid rgba(52, 211, 153, 0.25)',
-              padding: '0.15rem 0.5rem',
-              borderRadius: '4px',
-            }}
-          >
-            Market Discovery
-          </span>
-          <span style={{ fontSize: '0.78rem', color: '#64748b' }}>• Real-Time Web Crawler</span>
-        </div>
+    <div className="view-container" style={{ maxWidth: '1240px', margin: '0 auto', paddingBottom: '3rem' }}>
+      {/* Page Header (Consistent with Overview/Leads in DealSignal) */}
+      <div className="page-header" style={{ marginBottom: '22px' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <span className="pill pill-high" style={{ fontSize: '11px', fontWeight: 700 }}>
+              Live Market Scout
+            </span>
+            <span style={{ fontSize: '12px', color: '#68776e', fontWeight: 500 }}>
+              Real-Time Web Intelligence
+            </span>
+          </div>
 
-        <h1 style={{ fontSize: '1.65rem', fontWeight: 700, color: '#f8fafc', margin: '0 0 0.35rem 0', letterSpacing: '-0.02em' }}>
-          Global Account Scout
-        </h1>
-        <p style={{ fontSize: '0.9rem', color: '#94a3b8', margin: 0, maxWidth: '680px', lineHeight: 1.5 }}>
-          Search and scrape the live internet for accounts that strictly match your target profile.
-          Every run queries active web sources in real time.
-        </p>
+          <h1 style={{ color: '#17221d', letterSpacing: '-1.2px' }}>
+            Global Account Scout
+          </h1>
+          <p style={{ maxWidth: '640px', fontSize: '13px', color: '#64736a' }}>
+            Search and scrape the live internet for accounts that strictly match your target profile.
+            Every search performs live web extraction on demand with zero static databases.
+          </p>
+        </div>
       </div>
 
-      {/* ICP Parameter Selector Card */}
+      {/* ICP Parameters Panel */}
       <div
-        className="card"
+        className="panel"
         style={{
-          padding: '1.5rem',
-          borderRadius: '12px',
-          background: '#0f1512',
-          border: '1px solid #1e2c24',
-          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)',
-          marginBottom: '2rem',
+          padding: '24px',
+          borderRadius: '14px',
+          background: '#ffffff',
+          border: '1px solid #e1e7e2',
+          boxShadow: '0 8px 24px rgba(23, 34, 29, 0.04)',
+          marginBottom: '26px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-            <TargetIcon size={14} color="#34d399" />
-            <span style={{ fontSize: '0.86rem', fontWeight: 600, color: '#f1f5f9' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <TargetIcon size={16} color="#243c22" />
+            <span style={{ fontSize: '14px', fontWeight: 700, color: '#17221d' }}>
               Target Qualification Criteria
             </span>
           </div>
-          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-            6 Mandatory Parameters
+          <span style={{ fontSize: '11px', color: '#7c8b81', fontWeight: 600 }}>
+            All 6 Parameters Required
           </span>
         </div>
 
@@ -275,14 +267,14 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: '1rem',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))',
+              gap: '14px',
             }}
           >
             {/* 1. Sector */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.35rem' }}>
-                Industry Sector <span style={{ color: '#ef4444' }}>*</span>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#27382d', marginBottom: '6px' }}>
+                Industry Sector <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <select
                 className="input-select"
@@ -290,14 +282,14 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                 onChange={(e) => setSector(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.6rem 0.8rem',
-                  borderRadius: '7px',
-                  background: '#16201b',
-                  color: '#f8fafc',
-                  border: '1px solid #28392e',
-                  fontSize: '0.85rem',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  background: '#fafcfa',
+                  color: '#17221d',
+                  border: '1px solid #d3ded6',
+                  fontSize: '13px',
+                  fontWeight: 500,
                   outline: 'none',
-                  transition: 'border-color 0.2s',
                 }}
               >
                 {SECTOR_OPTIONS.map((opt) => (
@@ -310,8 +302,8 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
 
             {/* 2. Company Size */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.35rem' }}>
-                Headcount Scale <span style={{ color: '#ef4444' }}>*</span>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#27382d', marginBottom: '6px' }}>
+                Headcount Scale <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <select
                 className="input-select"
@@ -319,12 +311,13 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                 onChange={(e) => setCompanySize(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.6rem 0.8rem',
-                  borderRadius: '7px',
-                  background: '#16201b',
-                  color: '#f8fafc',
-                  border: '1px solid #28392e',
-                  fontSize: '0.85rem',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  background: '#fafcfa',
+                  color: '#17221d',
+                  border: '1px solid #d3ded6',
+                  fontSize: '13px',
+                  fontWeight: 500,
                   outline: 'none',
                 }}
               >
@@ -338,8 +331,8 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
 
             {/* 3. Approx Revenue */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.35rem' }}>
-                Annual Revenue Range <span style={{ color: '#ef4444' }}>*</span>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#27382d', marginBottom: '6px' }}>
+                Annual Revenue Range <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <select
                 className="input-select"
@@ -347,12 +340,13 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                 onChange={(e) => setApproxRevenue(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.6rem 0.8rem',
-                  borderRadius: '7px',
-                  background: '#16201b',
-                  color: '#f8fafc',
-                  border: '1px solid #28392e',
-                  fontSize: '0.85rem',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  background: '#fafcfa',
+                  color: '#17221d',
+                  border: '1px solid #d3ded6',
+                  fontSize: '13px',
+                  fontWeight: 500,
                   outline: 'none',
                 }}
               >
@@ -366,8 +360,8 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
 
             {/* 4. Region */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.35rem' }}>
-                Geographic Market <span style={{ color: '#ef4444' }}>*</span>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#27382d', marginBottom: '6px' }}>
+                Geographic Market <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <select
                 className="input-select"
@@ -375,12 +369,13 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                 onChange={(e) => setRegion(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.6rem 0.8rem',
-                  borderRadius: '7px',
-                  background: '#16201b',
-                  color: '#f8fafc',
-                  border: '1px solid #28392e',
-                  fontSize: '0.85rem',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  background: '#fafcfa',
+                  color: '#17221d',
+                  border: '1px solid #d3ded6',
+                  fontSize: '13px',
+                  fontWeight: 500,
                   outline: 'none',
                 }}
               >
@@ -394,8 +389,8 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
 
             {/* 5. Buying Signal */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.35rem' }}>
-                Buying Intent Trigger <span style={{ color: '#ef4444' }}>*</span>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#27382d', marginBottom: '6px' }}>
+                Buying Intent Trigger <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <select
                 className="input-select"
@@ -403,12 +398,13 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                 onChange={(e) => setBuyingSignal(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.6rem 0.8rem',
-                  borderRadius: '7px',
-                  background: '#16201b',
-                  color: '#f8fafc',
-                  border: '1px solid #28392e',
-                  fontSize: '0.85rem',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  background: '#fafcfa',
+                  color: '#17221d',
+                  border: '1px solid #d3ded6',
+                  fontSize: '13px',
+                  fontWeight: 500,
                   outline: 'none',
                 }}
               >
@@ -422,8 +418,8 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
 
             {/* 6. Target Role */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#94a3b8', marginBottom: '0.35rem' }}>
-                Target Buyer Persona <span style={{ color: '#ef4444' }}>*</span>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#27382d', marginBottom: '6px' }}>
+                Target Buyer Persona <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <select
                 className="input-select"
@@ -431,12 +427,13 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                 onChange={(e) => setTargetRole(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.6rem 0.8rem',
-                  borderRadius: '7px',
-                  background: '#16201b',
-                  color: '#f8fafc',
-                  border: '1px solid #28392e',
-                  fontSize: '0.85rem',
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  background: '#fafcfa',
+                  color: '#17221d',
+                  border: '1px solid #d3ded6',
+                  fontSize: '13px',
+                  fontWeight: 500,
                   outline: 'none',
                 }}
               >
@@ -452,13 +449,14 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
           {error && (
             <div
               style={{
-                marginTop: '1rem',
-                padding: '0.6rem 0.85rem',
-                borderRadius: '6px',
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                color: '#fca5a5',
-                fontSize: '0.82rem',
+                marginTop: '14px',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                color: '#b91c1c',
+                fontSize: '12px',
+                fontWeight: 600,
               }}
             >
               {error}
@@ -467,29 +465,26 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
 
           <div
             style={{
-              marginTop: '1.25rem',
+              marginTop: '18px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              paddingTop: '1rem',
-              borderTop: '1px solid #1a271f',
+              paddingTop: '16px',
+              borderTop: '1px solid #edf1ee',
             }}
           >
-            <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
-              Queries live web sources on demand • Direct homepage scraping
+            <div style={{ fontSize: '12px', color: '#7c8a81' }}>
+              Queries live web sources in real time • Direct homepage extraction
             </div>
 
             <button
               type="submit"
               disabled={loading || !isFormValid}
-              className="btn btn-primary"
+              className="btn btn-dark"
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.45rem',
-                padding: '0.65rem 1.4rem',
-                fontWeight: 600,
-                fontSize: '0.85rem',
+                padding: '11px 22px',
+                fontSize: '13px',
+                fontWeight: 700,
                 opacity: loading ? 0.75 : 1,
                 cursor: loading ? 'not-allowed' : 'pointer',
               }}
@@ -510,39 +505,40 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
         </form>
       </div>
 
-      {/* Subtle Premium Progress Animation */}
+      {/* Progress Telemetry */}
       {loading && (
         <div
-          className="card"
+          className="panel"
           style={{
-            padding: '1.5rem',
-            borderRadius: '10px',
-            background: '#0d1310',
-            border: '1px solid #1e3126',
-            marginBottom: '2rem',
+            padding: '20px 24px',
+            borderRadius: '12px',
+            background: '#ffffff',
+            border: '1px solid #dbe3dc',
+            marginBottom: '26px',
+            boxShadow: '0 4px 18px rgba(23, 34, 29, 0.04)',
           }}
         >
-          <div className="scout-scan-bar" style={{ marginBottom: '1rem' }} />
+          <div className="scout-scan-bar" style={{ marginBottom: '14px' }} />
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
               <span
                 style={{
                   display: 'inline-block',
-                  width: '8px',
-                  height: '8px',
+                  width: '9px',
+                  height: '9px',
                   borderRadius: '50%',
-                  background: '#34d399',
-                  boxShadow: '0 0 8px #34d399',
+                  background: '#243c22',
+                  boxShadow: '0 0 8px rgba(36, 60, 34, 0.4)',
                   animation: 'subtleRadarPulse 1.4s infinite ease-in-out',
                 }}
               />
-              <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#f1f5f9' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#17221d' }}>
                 {searchStep}
               </span>
             </div>
 
-            <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+            <span style={{ fontSize: '12px', color: '#68776e', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
               {elapsedSec}s elapsed
             </span>
           </div>
@@ -552,27 +548,57 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
       {/* Results Section */}
       {searchResult && (
         <div>
-          {/* Header Bar */}
+          {/* HIGH-CONTRAST RESULTS RIBBON ("6 Accounts Identified") */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginBottom: '1rem',
-              paddingBottom: '0.6rem',
-              borderBottom: '1px solid #1f2e25',
+              marginBottom: '18px',
+              padding: '14px 20px',
+              background: '#ffffff',
+              borderRadius: '12px',
+              border: '1px solid #dbe3dc',
+              boxShadow: '0 4px 14px rgba(23, 34, 29, 0.04)',
             }}
           >
-            <div>
-              <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc' }}>
-                {searchResult.total_found} Accounts Identified
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span
+                style={{
+                  background: '#243c22',
+                  color: '#b9f36b',
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  padding: '3px 9px',
+                  borderRadius: '6px',
+                  lineHeight: 1.2,
+                }}
+              >
+                {searchResult.total_found}
               </span>
-              <span style={{ marginLeft: '0.5rem', fontSize: '0.78rem', color: '#64748b' }}>
+              <span
+                style={{
+                  fontSize: '16px',
+                  fontWeight: 800,
+                  color: '#17221d',
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                Accounts Identified
+              </span>
+              <span style={{ fontSize: '12px', color: '#65746a', fontWeight: 500 }}>
                 • Scraped in {(searchResult.duration_ms / 1000).toFixed(2)}s
               </span>
             </div>
 
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+            <span
+              className="pill pill-high"
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                padding: '4px 10px',
+              }}
+            >
               Ranked by ICP Fit Score
             </span>
           </div>
@@ -581,26 +607,24 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
-              gap: '1.25rem',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
+              gap: '18px',
             }}
           >
             {searchResult.results.map((company, idx) => {
               const isSaved = savedLeadIds.has(company.id);
-              const scoreColor =
-                company.fit_score >= 85 ? '#34d399' : company.fit_score >= 70 ? '#fbbf24' : '#f87171';
 
               return (
                 <div
                   key={company.id}
-                  className="scout-card"
+                  className="scout-card panel"
                   style={{
-                    padding: '1.35rem',
-                    borderRadius: '10px',
+                    padding: '20px',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
                     animationDelay: `${idx * 60}ms`,
+                    boxShadow: '0 6px 20px rgba(23, 34, 29, 0.05)',
                   }}
                 >
                   <div>
@@ -610,17 +634,17 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                         display: 'flex',
                         alignItems: 'flex-start',
                         justifyContent: 'space-between',
-                        marginBottom: '0.85rem',
+                        marginBottom: '14px',
                       }}
                     >
                       <div>
                         <h3
                           style={{
-                            fontSize: '1.15rem',
-                            fontWeight: 700,
-                            color: '#ffffff',
-                            margin: '0 0 0.2rem 0',
-                            letterSpacing: '-0.01em',
+                            fontSize: '17px',
+                            fontWeight: 800,
+                            color: '#17221d',
+                            margin: '0 0 3px 0',
+                            letterSpacing: '-0.02em',
                           }}
                         >
                           {company.company_name}
@@ -630,148 +654,163 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{
-                            fontSize: '0.78rem',
-                            color: '#34d399',
+                            fontSize: '12px',
+                            color: '#215c32',
                             textDecoration: 'none',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '0.25rem',
-                            fontWeight: 500,
+                            gap: '4px',
+                            fontWeight: 600,
                           }}
                         >
                           <span>{company.domain}</span>
-                          <ExternalLinkIcon size={11} color="#34d399" />
+                          <ExternalLinkIcon size={12} color="#215c32" />
                         </a>
                       </div>
 
                       <div
                         style={{
                           textAlign: 'center',
-                          padding: '0.3rem 0.6rem',
-                          borderRadius: '6px',
-                          background: `${scoreColor}14`,
-                          border: `1px solid ${scoreColor}35`,
+                          padding: '4px 10px',
+                          borderRadius: '8px',
+                          background: company.fit_score >= 80 ? '#edf7e6' : '#fff8ea',
+                          border: company.fit_score >= 80 ? '1px solid #c8e4ba' : '1px solid #fae1ad',
                         }}
                       >
-                        <div style={{ fontSize: '1.05rem', fontWeight: 800, color: scoreColor, lineHeight: 1 }}>
+                        <div
+                          style={{
+                            fontSize: '17px',
+                            fontWeight: 800,
+                            color: company.fit_score >= 80 ? '#23521e' : '#8a5300',
+                            lineHeight: 1,
+                          }}
+                        >
                           {company.fit_score}
                         </div>
-                        <div style={{ fontSize: '0.62rem', color: scoreColor, fontWeight: 700, textTransform: 'uppercase', marginTop: '2px' }}>
-                          Match
+                        <div
+                          style={{
+                            fontSize: '9px',
+                            color: company.fit_score >= 80 ? '#23521e' : '#8a5300',
+                            fontWeight: 800,
+                            textTransform: 'uppercase',
+                            marginTop: '2px',
+                          }}
+                        >
+                          Fit Score
                         </div>
                       </div>
                     </div>
 
-                    {/* Metadata Parameter Chips (High Contrast) */}
+                    {/* Metadata Parameter Chips */}
                     <div
                       style={{
                         display: 'flex',
                         flexWrap: 'wrap',
-                        gap: '0.35rem',
-                        marginBottom: '0.9rem',
+                        gap: '6px',
+                        marginBottom: '14px',
                       }}
                     >
                       <span
                         style={{
-                          fontSize: '0.73rem',
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '4px',
-                          background: '#16221c',
-                          color: '#e2e8f0',
-                          border: '1px solid #24392d',
-                          fontWeight: 500,
+                          fontSize: '11px',
+                          padding: '3px 8px',
+                          borderRadius: '5px',
+                          background: '#f2f6f2',
+                          color: '#26372c',
+                          border: '1px solid #dbe5dc',
+                          fontWeight: 600,
                         }}
                       >
                         {company.sector}
                       </span>
                       <span
                         style={{
-                          fontSize: '0.73rem',
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '4px',
-                          background: '#16221c',
-                          color: '#e2e8f0',
-                          border: '1px solid #24392d',
-                          fontWeight: 500,
+                          fontSize: '11px',
+                          padding: '3px 8px',
+                          borderRadius: '5px',
+                          background: '#f2f6f2',
+                          color: '#26372c',
+                          border: '1px solid #dbe5dc',
+                          fontWeight: 600,
                         }}
                       >
                         {company.company_size}
                       </span>
                       <span
                         style={{
-                          fontSize: '0.73rem',
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '4px',
-                          background: '#16221c',
-                          color: '#e2e8f0',
-                          border: '1px solid #24392d',
-                          fontWeight: 500,
+                          fontSize: '11px',
+                          padding: '3px 8px',
+                          borderRadius: '5px',
+                          background: '#f2f6f2',
+                          color: '#26372c',
+                          border: '1px solid #dbe5dc',
+                          fontWeight: 600,
                         }}
                       >
                         {company.approx_revenue}
                       </span>
                       <span
                         style={{
-                          fontSize: '0.73rem',
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '4px',
-                          background: '#16221c',
-                          color: '#e2e8f0',
-                          border: '1px solid #24392d',
-                          fontWeight: 500,
+                          fontSize: '11px',
+                          padding: '3px 8px',
+                          borderRadius: '5px',
+                          background: '#f2f6f2',
+                          color: '#26372c',
+                          border: '1px solid #dbe5dc',
+                          fontWeight: 600,
                         }}
                       >
                         {company.region}
                       </span>
                     </div>
 
-                    {/* Detected Intent Signal */}
+                    {/* Detected Intent Signal Box */}
                     <div
                       style={{
-                        padding: '0.6rem 0.75rem',
-                        borderRadius: '6px',
-                        background: '#1c150b',
-                        border: '1px solid #4a3416',
-                        marginBottom: '0.85rem',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        background: '#fef9ee',
+                        border: '1px solid #f6dfad',
+                        marginBottom: '14px',
                       }}
                     >
                       <div
                         style={{
-                          fontSize: '0.68rem',
-                          fontWeight: 700,
-                          color: '#f59e0b',
+                          fontSize: '10px',
+                          fontWeight: 800,
+                          color: '#92400e',
                           textTransform: 'uppercase',
                           letterSpacing: '0.04em',
-                          marginBottom: '0.15rem',
+                          marginBottom: '3px',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '0.3rem',
+                          gap: '5px',
                         }}
                       >
-                        <LightningIcon size={11} color="#f59e0b" />
+                        <LightningIcon size={12} color="#92400e" />
                         Detected Intent Trigger
                       </div>
-                      <div style={{ fontSize: '0.82rem', color: '#fef3c7', fontWeight: 600 }}>
+                      <div style={{ fontSize: '13px', color: '#78350f', fontWeight: 600 }}>
                         {company.buying_signal}
                       </div>
                     </div>
 
-                    {/* LIVE SCRAPED EVIDENCE BOX (HIGH CONTRAST & READABILITY) */}
-                    <div className="scout-evidence-box" style={{ marginBottom: '1.1rem' }}>
+                    {/* LIVE SCRAPED EVIDENCE BOX (HIGH CONTRAST & READABLE TEXT) */}
+                    <div className="scout-evidence-box" style={{ marginBottom: '16px' }}>
                       <div
                         style={{
-                          fontSize: '0.68rem',
-                          color: '#34d399',
-                          fontWeight: 700,
+                          fontSize: '10px',
+                          color: '#1b5e20',
+                          fontWeight: 800,
                           letterSpacing: '0.04em',
                           textTransform: 'uppercase',
-                          marginBottom: '0.35rem',
+                          marginBottom: '5px',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '0.3rem',
+                          gap: '5px',
                         }}
                       >
-                        <DocumentTextIcon size={12} color="#34d399" />
+                        <DocumentTextIcon size={12} color="#1b5e20" />
                         <span>Live Scraped Evidence</span>
                       </div>
                       <div className="scout-evidence-text">
@@ -780,27 +819,28 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Clean Bottom Actions */}
+                  {/* BOTTOM ACTION BUTTONS */}
                   <div
                     style={{
                       display: 'flex',
-                      gap: '0.5rem',
-                      paddingTop: '0.75rem',
-                      borderTop: '1px solid #1a2920',
+                      gap: '8px',
+                      paddingTop: '14px',
+                      borderTop: '1px solid #edf1ee',
                     }}
                   >
+                    {/* 1. Deep Research */}
                     <button
                       onClick={() => onNavigateToDiscover(company.company_name)}
-                      className="btn btn-primary"
+                      className="btn btn-dark"
                       style={{
                         flex: 1,
-                        fontSize: '0.78rem',
-                        padding: '0.45rem 0.75rem',
+                        fontSize: '12px',
+                        padding: '8px 12px',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '0.35rem',
-                        fontWeight: 600,
+                        gap: '6px',
+                        fontWeight: 700,
                       }}
                       title="Run full bounded AI research agent on this account"
                     >
@@ -808,53 +848,58 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                       Deep Research
                     </button>
 
+                    {/* 2. SAVE LEAD BUTTON (HIGH CONTRAST & CLEAR STATE) */}
                     <button
                       onClick={() => handleSaveToLeads(company)}
                       disabled={isSaved}
-                      className="btn btn-secondary"
+                      className="btn"
                       style={{
-                        fontSize: '0.78rem',
-                        padding: '0.45rem 0.75rem',
+                        fontSize: '12px',
+                        padding: '8px 14px',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '0.35rem',
-                        background: isSaved ? 'rgba(52, 211, 153, 0.15)' : undefined,
-                        borderColor: isSaved ? '#34d399' : undefined,
-                        color: isSaved ? '#34d399' : '#e2e8f0',
-                        fontWeight: 500,
+                        gap: '6px',
+                        background: isSaved ? '#b9f36b' : '#ffffff',
+                        color: '#17221d',
+                        border: isSaved ? '1.5px solid #9cd950' : '1.5px solid #243c22',
+                        fontWeight: 700,
+                        cursor: isSaved ? 'default' : 'pointer',
+                        transition: 'all 0.2s ease',
                       }}
                       title="Save lead to CRM pipeline"
                     >
                       {isSaved ? (
                         <>
-                          <CheckIcon size={12} color="#34d399" />
-                          Saved
+                          <CheckIcon size={13} color="#17221d" />
+                          <span>Saved</span>
                         </>
                       ) : (
                         <>
-                          <BookmarkIcon size={12} color="currentColor" />
-                          Save Lead
+                          <BookmarkIcon size={13} color="#243c22" />
+                          <span>Save Lead</span>
                         </>
                       )}
                     </button>
 
+                    {/* 3. Visit Website */}
                     <a
                       href={company.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="btn btn-secondary"
+                      className="btn"
                       style={{
-                        fontSize: '0.78rem',
-                        padding: '0.45rem 0.6rem',
+                        fontSize: '12px',
+                        padding: '8px 12px',
                         display: 'inline-flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: '#94a3b8',
+                        color: '#17221d',
+                        border: '1px solid #d3ded6',
                       }}
                       title="Visit company website"
                     >
-                      <ExternalLinkIcon size={12} color="currentColor" />
+                      <ExternalLinkIcon size={13} color="#17221d" />
                     </a>
                   </div>
                 </div>
