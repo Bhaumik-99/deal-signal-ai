@@ -195,6 +195,28 @@ export interface GlobalSearchResponse {
   timestamp: string;
 }
 
+export interface ChatMessage {
+  id: string;
+  sender: 'agent' | 'prospect' | 'human';
+  senderName: string;
+  subject?: string;
+  content: string;
+  timestamp: string;
+}
+
+export interface CampaignCompanyChat {
+  companyId: string;
+  companyName: string;
+  domain: string;
+  website?: string;
+  targetRole: string;
+  fitScore: number;
+  status: 'waiting' | 'replied' | 'meeting_scheduled';
+  agentActive: boolean;
+  messages: ChatMessage[];
+  waitingNote?: string;
+}
+
 export interface Campaign {
   id: string;
   name: string;
@@ -203,5 +225,6 @@ export interface Campaign {
   signal_filter: string;
   status: 'Active draft' | 'In review' | 'Paused';
   leads_count: number;
+  companies?: CampaignCompanyChat[];
 }
 

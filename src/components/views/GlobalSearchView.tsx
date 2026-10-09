@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GlobalSearchCriteria, DiscoveredCompany, GlobalSearchResponse, LeadItem, Campaign } from '../../types';
+import { GlobalSearchCriteria, DiscoveredCompany, GlobalSearchResponse, LeadItem, Campaign, CampaignCompanyChat } from '../../types';
 import { searchGlobalProspects } from '../../api';
 
 interface GlobalSearchViewProps {
@@ -385,9 +385,34 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
       await new Promise((r) => setTimeout(r, Math.max(25, Math.min(100, 1400 / total))));
     }
 
-    // Add campaign to global campaigns list in Campaigns tab
+    // Add campaign to global campaigns list in Campaigns tab with complete prospect chats
     const finalCampaignName = campaignName.trim();
     if (onCampaignCreated && searchResult) {
+      const chatCompanies: CampaignCompanyChat[] = searchResult.results.map((c) => {
+        const d = campaignDrafts[c.id];
+        return {
+          companyId: c.id,
+          companyName: c.company_name,
+          domain: c.domain,
+          website: c.website,
+          targetRole: c.target_role,
+          fitScore: c.fit_score,
+          status: 'waiting',
+          agentActive: true,
+          messages: [
+            {
+              id: `msg-${c.id}-1`,
+              sender: 'agent',
+              senderName: 'DealSignal AI Agent (Alex)',
+              subject: d?.subject || `Thought on ${c.company_name}'s commercial expansion`,
+              content: d?.body || `Hi ${c.company_name} team,\n\nI was reviewing your commercial focus and expansion initiatives. When scaling operations across ${c.region}, identifying high-fit accounts with verified buying triggers without manual research overhead becomes a major competitive advantage.\n\nDealSignal AI equips revenue teams with verified buying signals and customer context before outbound contact. Would 15 minutes next week be helpful to discuss whether this aligns with ${c.company_name}'s outbound priorities?\n\nBest regards,\nOutbound Growth Team\nDealSignal AI`,
+              timestamp: 'Today, ' + (d?.sentAt || 'just now')
+            }
+          ],
+          waitingNote: 'Awaiting prospect response • Follow-up #1 scheduled in 3 days'
+        };
+      });
+
       const newCamp: Campaign = {
         id: `camp-${Date.now()}`,
         name: finalCampaignName,
@@ -396,6 +421,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
         signal_filter: buyingSignal,
         status: 'Active draft',
         leads_count: searchResult.total_found,
+        companies: chatCompanies,
       };
       onCampaignCreated(newCamp);
     }
