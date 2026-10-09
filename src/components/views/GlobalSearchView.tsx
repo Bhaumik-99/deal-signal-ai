@@ -3,7 +3,7 @@ import { GlobalSearchCriteria, DiscoveredCompany, GlobalSearchResponse, LeadItem
 import { searchGlobalProspects } from '../../api';
 
 interface GlobalSearchViewProps {
-  onNavigateToDiscover: (companyName: string) => void;
+  onNavigateToDiscover: (companyName: string, companyWebsite?: string) => void;
   onLeadSaved: (lead: LeadItem) => void;
   onToast: (msg: string) => void;
 }
@@ -112,6 +112,14 @@ const TargetIcon: React.FC<{ size?: number; color?: string }> = ({ size = 14, co
   </svg>
 );
 
+const DownloadIcon: React.FC<{ size?: number; color?: string }> = ({ size = 13, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+
 export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
   onNavigateToDiscover,
   onLeadSaved,
@@ -213,6 +221,59 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
     onLeadSaved(newLead);
     setSavedLeadIds((prev) => new Set(prev).add(company.id));
     onToast(`Added ${company.company_name} to Leads queue`);
+  };
+
+  const handleDownloadCsv = () => {
+    if (!searchResult || searchResult.results.length === 0) return;
+
+    const headers = [
+      'Company Name',
+      'Website',
+      'Domain',
+      'Sector',
+      'Company Size',
+      'Approx Revenue',
+      'Region',
+      'Fit Score',
+      'Target Role',
+      'Buying Signal',
+      'Evidence Excerpt',
+      'Scraped Timestamp'
+    ];
+
+    const escapeCsv = (str: string | number | undefined | null) => {
+      if (str === undefined || str === null) return '""';
+      const s = String(str).replace(/"/g, '""');
+      return `"${s}"`;
+    };
+
+    const rows = searchResult.results.map((c) => [
+      escapeCsv(c.company_name),
+      escapeCsv(c.website),
+      escapeCsv(c.domain),
+      escapeCsv(c.sector),
+      escapeCsv(c.company_size),
+      escapeCsv(c.approx_revenue),
+      escapeCsv(c.region),
+      escapeCsv(c.fit_score),
+      escapeCsv(c.target_role),
+      escapeCsv(c.buying_signal),
+      escapeCsv(c.evidence_excerpt),
+      escapeCsv(c.scraped_timestamp)
+    ]);
+
+    const csvContent = [headers.map((h) => `"${h}"`).join(','), ...rows.map((r) => r.join(','))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `dealsignal_scouted_accounts_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    onToast(`Downloaded ${searchResult.results.length} scouted accounts as CSV.`);
   };
 
   return (
@@ -591,16 +652,42 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
               </span>
             </div>
 
-            <span
-              className="pill pill-high"
-              style={{
-                fontSize: '11px',
-                fontWeight: 700,
-                padding: '4px 10px',
-              }}
-            >
-              Ranked by ICP Fit Score
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={handleDownloadCsv}
+                className="btn"
+                style={{
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  padding: '6px 12px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: '#f2f6f2',
+                  color: '#17221d',
+                  border: '1px solid #c8d6cb',
+                  borderRadius: '7px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                title="Download CSV export of all live scraped accounts"
+              >
+                <DownloadIcon size={13} color="#17221d" />
+                <span>Download CSV</span>
+              </button>
+
+              <span
+                className="pill pill-high"
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  padding: '4px 10px',
+                }}
+              >
+                Ranked by ICP Fit Score
+              </span>
+            </div>
           </div>
 
           {/* Cards Grid */}
@@ -830,7 +917,7 @@ export const GlobalSearchView: React.FC<GlobalSearchViewProps> = ({
                   >
                     {/* 1. Deep Research */}
                     <button
-                      onClick={() => onNavigateToDiscover(company.company_name)}
+                      onClick={() => onNavigateToDiscover(company.company_name, company.website)}
                       className="btn btn-dark"
                       style={{
                         flex: 1,

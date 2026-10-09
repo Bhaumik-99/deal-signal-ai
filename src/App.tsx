@@ -97,6 +97,7 @@ export const App: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastTimer, setToastTimer] = useState<any>(null);
   const [discoverInitialCompany, setDiscoverInitialCompany] = useState<string>('');
+  const [discoverInitialWebsite, setDiscoverInitialWebsite] = useState<string>('');
   const [leads, setLeads] = useState<LeadItem[]>(INITIAL_LEADS);
   const [health, setHealth] = useState<HealthResponse | null>(null);
 
@@ -140,9 +141,12 @@ export const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleNavigateToDiscover = (companyName?: string) => {
+  const handleNavigateToDiscover = (companyName?: string, companyWebsite?: string) => {
     if (companyName) {
       setDiscoverInitialCompany(companyName);
+    }
+    if (companyWebsite) {
+      setDiscoverInitialWebsite(companyWebsite);
     }
     setCurrentPage('discover');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -220,6 +224,7 @@ export const App: React.FC = () => {
               {currentPage === 'discover' && (
                 <DiscoverView
                   initialCompanyName={discoverInitialCompany}
+                  initialWebsite={discoverInitialWebsite}
                   onLeadSaved={handleLeadSaved}
                   onToast={showToast}
                 />

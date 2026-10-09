@@ -8,6 +8,7 @@ import { runAgentWorkflow } from '../../api';
 
 interface DiscoverViewProps {
   initialCompanyName?: string;
+  initialWebsite?: string;
   onLeadSaved: (lead: LeadItem) => void;
   onToast: (message: string) => void;
 }
@@ -125,11 +126,12 @@ const EVALUATION_COMPANIES = [
 
 export const DiscoverView: React.FC<DiscoverViewProps> = ({
   initialCompanyName,
+  initialWebsite,
   onLeadSaved,
   onToast
 }) => {
   const [name, setName] = useState(initialCompanyName || '');
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState(initialWebsite || '');
   const [icp, setIcp] = useState(
     'Mid-market B2B company growing its sales team and investing in revenue operations.'
   );
@@ -159,11 +161,14 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
       const matched = EVALUATION_COMPANIES.find(
         (c) => c.name.toLowerCase() === initialCompanyName.toLowerCase()
       );
-      if (matched) {
+      if (matched && !initialWebsite) {
         setUrl(matched.url);
       }
     }
-  }, [initialCompanyName]);
+    if (initialWebsite) {
+      setUrl(initialWebsite);
+    }
+  }, [initialCompanyName, initialWebsite]);
 
   const handleSelectEvalCompany = (compName: string, compUrl: string) => {
     setName(compName);
@@ -175,6 +180,10 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
     e.preventDefault();
     if (!name.trim()) {
       setError('Please provide a company name.');
+      return;
+    }
+    if (!url.trim()) {
+      setError('Company website URL is compulsory. Please enter the target website URL.');
       return;
     }
 
@@ -468,13 +477,14 @@ export const DiscoverView: React.FC<DiscoverViewProps> = ({
             </div>
 
             <div className="field">
-              <label htmlFor="companyUrl">Company website</label>
+              <label htmlFor="companyUrl">Company website *</label>
               <input
                 id="companyUrl"
                 placeholder="https://company.com"
                 type="url"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
+                required
               />
               <span className="field-hint">
                 Validated against loopback and private IP blocks to prevent SSRF.

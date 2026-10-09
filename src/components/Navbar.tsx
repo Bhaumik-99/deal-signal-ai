@@ -47,9 +47,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenApp }) => {
               <path
                 d="M5 17 11 5l3.5 7H19"
                 stroke="#243c22"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
               <circle cx="18.5" cy="17" r="2.5" fill="#243c22" />
             </svg>
